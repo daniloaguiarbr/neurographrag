@@ -1,0 +1,873 @@
+use assert_cmd::Command;
+use tempfile::TempDir;
+
+/// Cria um Command isolado com db em TempDir dedicado e cache de modelos compartilhado.
+fn cmd(tmp: &TempDir) -> Command {
+    let mut c = Command::cargo_bin("neurographrag").unwrap();
+    c.env("NEUROGRAPHRAG_DB_PATH", tmp.path().join("test.sqlite"));
+    c.env("NEUROGRAPHRAG_LOG_LEVEL", "error");
+    c
+}
+
+fn init_db(tmp: &TempDir) {
+    cmd(tmp).arg("init").assert().success();
+}
+
+fn isolated_cmd_in(dir: &std::path::Path) -> Command {
+    let mut c = Command::cargo_bin("neurographrag").unwrap();
+    c.current_dir(dir);
+    c.env_remove("NEUROGRAPHRAG_NAMESPACE");
+    c.env_remove("NEUROGRAPHRAG_DB_PATH");
+    c.env("NEUROGRAPHRAG_LOG_LEVEL", "error");
+    c
+}
+
+// ---------------------------------------------------------------------------
+// init
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_init_cria_arquivo_sqlite() {
+    let tmp = TempDir::new().unwrap();
+    let db_path = tmp.path().join("test.sqlite");
+    assert!(!db_path.exists(), "banco nao deve existir antes do init");
+
+    cmd(&tmp).arg("init").assert().success();
+
+    assert!(db_path.exists(), "banco deve existir apos o init");
+}
+
+#[test]
+fn test_init_retorna_json_com_status_ok() {
+    let tmp = TempDir::new().unwrap();
+    let output = cmd(&tmp)
+        .arg("init")
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(json["status"], "ok");
+    assert_eq!(json["model"], "multilingual-e5-small");
+    assert!(json["dim"].as_u64().unwrap() > 0);
+}
+
+// ---------------------------------------------------------------------------
+// health
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_health_falha_sem_init() {
+    let tmp = TempDir::new().unwrap();
+    cmd(&tmp).arg("health").assert().failure();
+}
+
+#[test]
+fn test_health_ok_apos_init() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    let output = cmd(&tmp)
+        .arg("health")
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(json["status"], "ok");
+    assert_eq!(json["integrity"], "ok");
+}
+
+// ---------------------------------------------------------------------------
+// remember
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_remember_cria_memoria() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    let output = cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "memoria-teste",
+            "--type",
+            "user",
+            "--description",
+            "Descricao de teste",
+            "--body",
+            "Conteudo do corpo da memoria de teste",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(json["action"], "created");
+    assert_eq!(json["name"], "memoria-teste");
+    assert!(json["memory_id"].as_i64().unwrap() > 0);
+}
+
+#[test]
+fn test_remember_duplicata_retorna_exit_2() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "dup-memoria",
+            "--type",
+            "user",
+            "--description",
+            "Primeira versao",
+            "--body",
+            "Corpo da primeira versao",
+        ])
+        .assert()
+        .success();
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "dup-memoria",
+            "--type",
+            "user",
+            "--description",
+            "Segunda versao",
+            "--body",
+            "Corpo da segunda versao",
+        ])
+        .assert()
+        .failure()
+        .code(2);
+}
+
+#[test]
+fn test_remember_force_merge_atualiza() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "memoria-merge",
+            "--type",
+            "feedback",
+            "--description",
+            "Descricao original",
+            "--body",
+            "Corpo original da memoria",
+        ])
+        .assert()
+        .success();
+
+    let output = cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "memoria-merge",
+            "--type",
+            "feedback",
+            "--description",
+            "Descricao atualizada",
+            "--body",
+            "Corpo atualizado da memoria",
+            "--force-merge",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(json["action"], "updated");
+    assert_eq!(json["name"], "memoria-merge");
+}
+
+// ---------------------------------------------------------------------------
+// read
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_read_memoria_existente() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "memoria-legivel",
+            "--type",
+            "project",
+            "--description",
+            "Uma memoria legivel",
+            "--body",
+            "O conteudo do corpo da memoria",
+        ])
+        .assert()
+        .success();
+
+    let output = cmd(&tmp)
+        .args(["read", "--name", "memoria-legivel"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(json["name"], "memoria-legivel");
+    assert_eq!(json["memory_type"], "project");
+    assert_eq!(json["description"], "Uma memoria legivel");
+}
+
+#[test]
+fn test_read_inexistente_retorna_exit_4() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args(["read", "--name", "nao-existe"])
+        .assert()
+        .failure()
+        .code(4);
+}
+
+// ---------------------------------------------------------------------------
+// list
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_list_memorias() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "lista-mem-1",
+            "--type",
+            "user",
+            "--description",
+            "desc1",
+            "--body",
+            "corpo1",
+        ])
+        .assert()
+        .success();
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "lista-mem-2",
+            "--type",
+            "feedback",
+            "--description",
+            "desc2",
+            "--body",
+            "corpo2",
+        ])
+        .assert()
+        .success();
+
+    let output = cmd(&tmp)
+        .arg("list")
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert!(json.as_array().unwrap().len() >= 2);
+}
+
+// ---------------------------------------------------------------------------
+// forget
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_forget_soft_delete() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "esquecivel",
+            "--type",
+            "user",
+            "--description",
+            "sera deletada",
+            "--body",
+            "corpo",
+        ])
+        .assert()
+        .success();
+
+    let output = cmd(&tmp)
+        .args(["forget", "--name", "esquecivel"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(json["forgotten"], true);
+
+    cmd(&tmp)
+        .args(["read", "--name", "esquecivel"])
+        .assert()
+        .failure()
+        .code(4);
+}
+
+#[test]
+fn test_forget_inexistente_retorna_exit_4() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args(["forget", "--name", "nao-existe"])
+        .assert()
+        .failure()
+        .code(4);
+}
+
+// ---------------------------------------------------------------------------
+// purge
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_purge_remove_memoria_soft_deleted() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "purge-target",
+            "--type",
+            "user",
+            "--description",
+            "soft delete target",
+            "--body",
+            "body to purge later",
+        ])
+        .assert()
+        .success();
+
+    cmd(&tmp)
+        .args(["forget", "--name", "purge-target"])
+        .assert()
+        .success();
+
+    let output = cmd(&tmp)
+        .args(["purge", "--name", "purge-target"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(json["purged_count"], 1);
+    assert_eq!(json["purged_names"][0], "purge-target");
+}
+
+// ---------------------------------------------------------------------------
+// namespace-detect
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_namespace_detect_ler_config_do_projeto() {
+    let tmp = TempDir::new().unwrap();
+    let config_dir = tmp.path().join(".neurographrag");
+    std::fs::create_dir_all(&config_dir).unwrap();
+    std::fs::write(
+        config_dir.join("config.toml"),
+        "namespace = \"project-scope\"\n",
+    )
+    .unwrap();
+
+    let output = isolated_cmd_in(tmp.path())
+        .arg("namespace-detect")
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(json["namespace"], "project-scope");
+    assert_eq!(json["source"], "project_config");
+}
+
+// ---------------------------------------------------------------------------
+// sync-safe-copy
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_sync_safe_copy_cria_snapshot_consistente() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+    let dest = tmp.path().join("snapshot.sqlite");
+
+    let output = cmd(&tmp)
+        .args(["sync-safe-copy", "--dest", dest.to_str().unwrap()])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(json["status"], "ok");
+    assert!(dest.exists());
+    assert!(std::fs::metadata(dest).unwrap().len() > 0);
+}
+
+// ---------------------------------------------------------------------------
+// stats
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_stats_retorna_contagens() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "stat-mem",
+            "--type",
+            "user",
+            "--description",
+            "desc",
+            "--body",
+            "corpo da stat",
+        ])
+        .assert()
+        .success();
+
+    let output = cmd(&tmp)
+        .arg("stats")
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert!(json["memories"].as_i64().unwrap() >= 1);
+    assert!(json["db_size_bytes"].as_u64().unwrap() > 0);
+    assert_eq!(json["schema_version"], "5");
+}
+
+#[test]
+fn test_stats_falha_sem_init() {
+    let tmp = TempDir::new().unwrap();
+    cmd(&tmp).arg("stats").assert().failure();
+}
+
+// ---------------------------------------------------------------------------
+// rename
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_rename_memoria_funciona() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "memoria-antiga",
+            "--type",
+            "user",
+            "--description",
+            "desc original",
+            "--body",
+            "corpo original",
+        ])
+        .assert()
+        .success();
+
+    let output = cmd(&tmp)
+        .args([
+            "rename",
+            "--name",
+            "memoria-antiga",
+            "--new-name",
+            "memoria-renomeada",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(json["name"], "memoria-renomeada");
+    assert!(json["memory_id"].as_i64().unwrap() > 0);
+}
+
+#[test]
+fn test_rename_inexistente_retorna_exit_4() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args(["rename", "--name", "nao-existe", "--new-name", "novo-nome"])
+        .assert()
+        .failure()
+        .code(4);
+}
+
+#[test]
+fn test_rename_new_name_invalido_retorna_exit_1() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "memoria-valida",
+            "--type",
+            "user",
+            "--description",
+            "desc",
+            "--body",
+            "corpo",
+        ])
+        .assert()
+        .success();
+
+    cmd(&tmp)
+        .args([
+            "rename",
+            "--name",
+            "memoria-valida",
+            "--new-name",
+            "Nome Com Espaco",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+}
+
+// ---------------------------------------------------------------------------
+// edit
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_edit_memoria_funciona() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "memoria-editavel",
+            "--type",
+            "user",
+            "--description",
+            "desc original",
+            "--body",
+            "corpo original",
+        ])
+        .assert()
+        .success();
+
+    let output = cmd(&tmp)
+        .args([
+            "edit",
+            "--name",
+            "memoria-editavel",
+            "--body",
+            "corpo atualizado",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(json["action"], "updated");
+}
+
+#[test]
+fn test_edit_inexistente_retorna_exit_4() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args(["edit", "--name", "nao-existe", "--body", "novo corpo"])
+        .assert()
+        .failure()
+        .code(4);
+}
+
+#[test]
+fn test_edit_com_conflict_retorna_exit_3() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    let output = cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "memoria-conflito",
+            "--type",
+            "user",
+            "--description",
+            "desc original",
+            "--body",
+            "corpo original",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    let wrong_updated_at = json["version"].as_i64().unwrap() + 999;
+
+    cmd(&tmp)
+        .args([
+            "edit",
+            "--name",
+            "memoria-conflito",
+            "--body",
+            "novo corpo",
+            "--expected-updated-at",
+            &wrong_updated_at.to_string(),
+        ])
+        .assert()
+        .failure()
+        .code(3);
+}
+
+// ---------------------------------------------------------------------------
+// history
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_history_retorna_versoes() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "memoria-historico",
+            "--type",
+            "user",
+            "--description",
+            "v1",
+            "--body",
+            "corpo v1",
+        ])
+        .assert()
+        .success();
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "memoria-historico",
+            "--type",
+            "user",
+            "--description",
+            "v2",
+            "--body",
+            "corpo v2",
+            "--force-merge",
+        ])
+        .assert()
+        .success();
+
+    let output = cmd(&tmp)
+        .args(["history", "--name", "memoria-historico"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    let versions = json["versions"].as_array().unwrap();
+    assert!(versions.len() >= 2);
+}
+
+#[test]
+fn test_history_inexistente_retorna_exit_4() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args(["history", "--name", "nao-existe"])
+        .assert()
+        .failure()
+        .code(4);
+}
+
+// ---------------------------------------------------------------------------
+// restore
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_restore_memoria_funciona() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "memoria-restore",
+            "--type",
+            "user",
+            "--description",
+            "v1",
+            "--body",
+            "corpo v1",
+        ])
+        .assert()
+        .success();
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "memoria-restore",
+            "--type",
+            "user",
+            "--description",
+            "v2",
+            "--body",
+            "corpo v2",
+            "--force-merge",
+        ])
+        .assert()
+        .success();
+
+    let output = cmd(&tmp)
+        .args(["restore", "--name", "memoria-restore", "--version", "1"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(json["restored_from"], 1);
+    assert!(json["version"].as_i64().unwrap() >= 3);
+}
+
+#[test]
+fn test_restore_versao_inexistente_retorna_exit_4() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "memoria-sem-versao",
+            "--type",
+            "user",
+            "--description",
+            "desc",
+            "--body",
+            "corpo",
+        ])
+        .assert()
+        .success();
+
+    cmd(&tmp)
+        .args(["restore", "--name", "memoria-sem-versao", "--version", "99"])
+        .assert()
+        .failure()
+        .code(4);
+}
+
+// ---------------------------------------------------------------------------
+// regressão forget+purge (FTS5 external-content corruption)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_forget_purge_nao_corrompe_fts_index() {
+    // Regressão: forget.rs previamente executava `DELETE FROM fts_memories WHERE rowid=?`
+    // direto, corrompendo índice FTS5 external-content. A corrupção só aparecia
+    // quando purge executava DELETE físico em memories disparando trg_fts_ad.
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    for i in 0..3 {
+        let nome = format!("fts-reg-{i}");
+        cmd(&tmp)
+            .args([
+                "remember",
+                "--name",
+                &nome,
+                "--type",
+                "user",
+                "--description",
+                "regression",
+                "--body",
+                &format!("corpo fts regression {i}"),
+            ])
+            .assert()
+            .success();
+
+        cmd(&tmp)
+            .args(["forget", "--name", &nome])
+            .assert()
+            .success();
+
+        cmd(&tmp)
+            .args(["purge", "--name", &nome])
+            .assert()
+            .success();
+    }
+
+    let output = cmd(&tmp)
+        .arg("health")
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(
+        json["integrity"], "ok",
+        "PRAGMA integrity_check DEVE permanecer ok após ciclos forget+purge"
+    );
+}

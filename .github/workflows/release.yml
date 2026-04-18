@@ -1,0 +1,204 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  validate:
+    name: Validate (cargo publish dry-run)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo publish --dry-run --allow-dirty
+
+  build-matrix:
+    name: Build ${{ matrix.target }}
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            use-cross: false
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            use-cross: false
+            musl: true
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            use-cross: true
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            use-cross: true
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            use-cross: false
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            use-cross: false
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            use-cross: false
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            use-cross: false
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install musl tools
+        if: matrix.musl == true
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Install cross
+        if: matrix.use-cross == true
+        run: cargo install cross --locked
+
+      - name: Build with cross
+        if: matrix.use-cross == true
+        run: cross build --release --target ${{ matrix.target }}
+
+      - name: Build with cargo
+        if: matrix.use-cross != true
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          bin="neurographrag"
+          pkg_name="neurographrag-${{ github.ref_name }}-${{ matrix.target }}"
+          mkdir -p "$pkg_name"
+          cp "target/${{ matrix.target }}/release/$bin" "$pkg_name/"
+          cp README.md CHANGELOG.md "$pkg_name/"
+          tar czf "$pkg_name.tar.gz" "$pkg_name"
+          shasum -a 256 "$pkg_name.tar.gz" > "$pkg_name.tar.gz.sha256"
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          bin="neurographrag.exe"
+          pkg_name="neurographrag-${{ github.ref_name }}-${{ matrix.target }}"
+          mkdir -p "$pkg_name"
+          cp "target/${{ matrix.target }}/release/$bin" "$pkg_name/"
+          cp README.md CHANGELOG.md "$pkg_name/"
+          7z a "$pkg_name.zip" "$pkg_name"
+          certutil -hashfile "$pkg_name.zip" SHA256 > "$pkg_name.zip.sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: neurographrag-${{ matrix.target }}
+          path: |
+            neurographrag-*.tar.gz
+            neurographrag-*.tar.gz.sha256
+            neurographrag-*.zip
+            neurographrag-*.zip.sha256
+
+  macos-universal:
+    name: macOS Universal Binary
+    needs: build-matrix
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: neurographrag-x86_64-apple-darwin
+          path: x86_64/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: neurographrag-aarch64-apple-darwin
+          path: aarch64/
+
+      - name: Extract binaries and lipo
+        run: |
+          cd x86_64
+          tar xzf neurographrag-*-x86_64-apple-darwin.tar.gz
+          cd ../aarch64
+          tar xzf neurographrag-*-aarch64-apple-darwin.tar.gz
+          cd ..
+          mkdir -p neurographrag-${{ github.ref_name }}-universal-apple-darwin
+          lipo -create \
+            x86_64/neurographrag-*/neurographrag \
+            aarch64/neurographrag-*/neurographrag \
+            -output neurographrag-${{ github.ref_name }}-universal-apple-darwin/neurographrag
+          cp README.md CHANGELOG.md neurographrag-${{ github.ref_name }}-universal-apple-darwin/
+          tar czf neurographrag-${{ github.ref_name }}-universal-apple-darwin.tar.gz \
+            neurographrag-${{ github.ref_name }}-universal-apple-darwin
+          shasum -a 256 neurographrag-${{ github.ref_name }}-universal-apple-darwin.tar.gz \
+            > neurographrag-${{ github.ref_name }}-universal-apple-darwin.tar.gz.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: neurographrag-universal-apple-darwin
+          path: |
+            neurographrag-*-universal-apple-darwin.tar.gz
+            neurographrag-*-universal-apple-darwin.tar.gz.sha256
+
+  publish-github-release:
+    name: Publish GitHub Release
+    needs: [build-matrix, macos-universal]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Collect release assets
+        run: |
+          mkdir -p release
+          find artifacts/ -type f \( -name "*.tar.gz" -o -name "*.zip" -o -name "*.sha256" \) -exec cp {} release/ \;
+          cd release
+          ls -la
+
+      - name: Compute consolidated SHA256SUMS
+        run: |
+          cd release
+          rm -f SHA256SUMS.txt
+          for f in *.tar.gz *.zip; do
+            [ -e "$f" ] || continue
+            shasum -a 256 "$f" >> SHA256SUMS.txt
+          done
+          cat SHA256SUMS.txt
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "${{ github.ref_name }}" \
+            --notes-file CHANGELOG.md \
+            --verify-tag \
+            release/*
+
+  publish-crates-io:
+    name: Publish to crates.io
+    needs: publish-github-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}

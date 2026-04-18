@@ -1,0 +1,81 @@
+[package]
+name = "neurographrag"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+description = "Local GraphRAG memory for LLMs in a single SQLite file"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/daniloaguiarbr/neurographrag"
+homepage = "https://docs.rs/neurographrag"
+documentation = "https://docs.rs/neurographrag"
+readme = "README.md"
+keywords = ["graphrag", "sqlite", "llm", "embeddings", "memory"]
+categories = ["command-line-utilities", "database"]
+default-run = "neurographrag"
+exclude = [
+    ".serena/",
+    ".claude/",
+    ".vscode/",
+    ".idea/",
+    "logs/",
+    "memory/",
+    "docs_rules/",
+    "CLAUDE.md",
+    "AGENTS.md",
+    "MEMORY.md",
+    "ralph-loop.local.md",
+    "*.profraw",
+    "*.profdata",
+    "*.log",
+    "*.sqlite",
+    "*.sqlite-shm",
+    "*.sqlite-wal",
+]
+
+[[bin]]
+name = "neurographrag"
+path = "src/main.rs"
+
+[dependencies]
+rusqlite = { version = "0.32", features = ["bundled", "blob", "load_extension", "functions", "trace"] }
+sqlite-vec = "0.1.6"
+fastembed = "5"
+clap = { version = "4.5", features = ["derive", "env"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+tracing-appender = "0.2"
+refinery = { version = "0.8", features = ["rusqlite"] }
+anyhow = "1"
+thiserror = "2"
+blake3 = "1"
+slug = "0.1"
+uuid = { version = "1", features = ["v4", "serde"] }
+directories = "5"
+interprocess = "2"
+notify = "6"
+regex = "1"
+toml = "0.8"
+tokio = { version = "1", features = ["full"] }
+zerocopy = { version = "0.7", features = ["derive"] }
+
+[dev-dependencies]
+assert_cmd = "2"
+criterion = { version = "0.5", features = ["html_reports"] }
+proptest = { version = "1", features = ["std"] }
+tempfile = "3"
+predicates = "3"
+serde_json = "1"
+serial_test = "3"
+mockall = "0.13"
+wiremock = "0.6"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+opt-level = 3
+
+[profile.dev]
+opt-level = 1

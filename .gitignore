@@ -1,0 +1,54 @@
+# Build artifacts
+/target/
+**/*.rs.bk
+Cargo.lock.bak
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# Secrets and credentials
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.toml
+
+# Private development
+.serena/
+.claude/
+CLAUDE.md
+AGENTS.md
+MEMORY.md
+memory/
+docs_rules/
+ralph-loop.local.md
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Coverage
+*.profraw
+*.profdata
+lcov.info
+coverage/
+target/llvm-cov/
+
+# Local SQLite databases
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db
+
+# Temporary files
+*.tmp
+*.bak
