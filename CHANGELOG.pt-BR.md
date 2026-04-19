@@ -8,6 +8,12 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/spec/v2.0.0.html).
 
+## [2.0.2] - 2026-04-19
+
+### Corrigido
+
+- Flag `--lang` agora aceita os códigos curtos `en`/`pt` conforme documentado (antes exigia os identificadores completos `english`/`portugues`). Aliases adicionados: `en/english/EN`, `pt/portugues/portuguese/pt-BR/pt-br/PT`.
+
 ## [2.0.1] - 2026-04-19
 
 ### Adicionado

@@ -14,7 +14,9 @@ use std::sync::OnceLock;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, clap::ValueEnum)]
 pub enum Language {
+    #[value(name = "en", aliases = ["english", "EN"])]
     English,
+    #[value(name = "pt", aliases = ["portugues", "portuguese", "pt-BR", "pt-br", "PT"])]
     Portugues,
 }
 
