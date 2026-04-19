@@ -431,13 +431,13 @@ fn run_entities(args: GraphEntitiesArgs) -> Result<(), AppError> {
     let (total_count, items) = match (args.namespace.as_deref(), args.entity_type.as_deref()) {
         (Some(ns), Some(et)) => {
             let count: i64 = conn.query_row(
-                "SELECT COUNT(*) FROM entities WHERE namespace = ?1 AND kind = ?2",
+                "SELECT COUNT(*) FROM entities WHERE namespace = ?1 AND type = ?2",
                 rusqlite::params![ns, et],
                 |r| r.get(0),
             )?;
             let mut stmt = conn.prepare(
-                "SELECT id, name, kind, namespace, created_at FROM entities
-                 WHERE namespace = ?1 AND kind = ?2
+                "SELECT id, name, type, namespace, created_at FROM entities
+                 WHERE namespace = ?1 AND type = ?2
                  ORDER BY name ASC LIMIT ?3 OFFSET ?4",
             )?;
             let rows = stmt
@@ -452,7 +452,7 @@ fn run_entities(args: GraphEntitiesArgs) -> Result<(), AppError> {
                 |r| r.get(0),
             )?;
             let mut stmt = conn.prepare(
-                "SELECT id, name, kind, namespace, created_at FROM entities
+                "SELECT id, name, type, namespace, created_at FROM entities
                  WHERE namespace = ?1
                  ORDER BY name ASC LIMIT ?2 OFFSET ?3",
             )?;
@@ -463,13 +463,13 @@ fn run_entities(args: GraphEntitiesArgs) -> Result<(), AppError> {
         }
         (None, Some(et)) => {
             let count: i64 = conn.query_row(
-                "SELECT COUNT(*) FROM entities WHERE kind = ?1",
+                "SELECT COUNT(*) FROM entities WHERE type = ?1",
                 rusqlite::params![et],
                 |r| r.get(0),
             )?;
             let mut stmt = conn.prepare(
-                "SELECT id, name, kind, namespace, created_at FROM entities
-                 WHERE kind = ?1
+                "SELECT id, name, type, namespace, created_at FROM entities
+                 WHERE type = ?1
                  ORDER BY name ASC LIMIT ?2 OFFSET ?3",
             )?;
             let rows = stmt
@@ -480,7 +480,7 @@ fn run_entities(args: GraphEntitiesArgs) -> Result<(), AppError> {
         (None, None) => {
             let count: i64 = conn.query_row("SELECT COUNT(*) FROM entities", [], |r| r.get(0))?;
             let mut stmt = conn.prepare(
-                "SELECT id, name, kind, namespace, created_at FROM entities
+                "SELECT id, name, type, namespace, created_at FROM entities
                  ORDER BY name ASC LIMIT ?1 OFFSET ?2",
             )?;
             let rows = stmt

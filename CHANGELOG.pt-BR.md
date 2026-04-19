@@ -10,6 +10,29 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/spec
 
 ## [Sem Versão]
 
+## [2.3.0] - 2026-04-19
+
+### Corrigido
+- consulta SQL de graph entities agora usa o nome de coluna correto (NG-V220-01 CRITICAL)
+- stats e health agora aceitam a flag --format json (NG-V220-02 HIGH)
+- obrigatoriedade de --type no remember documentada em todos os exemplos (NV-005 HIGH)
+- documentação de rename corrigida para --name/--new-name (NV-002)
+- documentação de recall esclarece argumento posicional QUERY (NV-004)
+- documentação de forget remove flag --yes inexistente (NV-001)
+- documentação de list referencia campo items correto (NV-006)
+- documentação de related referencia campo results correto (NV-010)
+- MIGRATION.md referencia comando de instalação v2.3.0 (GAP-DOC-01)
+
+### Adicionado
+- flag obrigatória --relation de unlink documentada (NV-003)
+- graph traverse --from espera nome de entidade documentado (NV-007)
+- lista de valores restritos de entity_type documentada (NV-009)
+- flag --format adicionada ao sync-safe-copy para controle de saída (NG-V220-04)
+
+### Alterado
+- __debug_schema esclarece semântica de user_version versus schema_version (NG-V220-03)
+- flags globais de i18n documentadas como exclusivas do PT (GAP-I18N-02 LOW)
+
 ## [2.2.0] - 2026-04-19
 
 ### Corrigido

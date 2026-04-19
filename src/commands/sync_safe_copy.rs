@@ -12,6 +12,9 @@ pub struct SyncSafeCopyArgs {
     pub dest: std::path::PathBuf,
     #[arg(long, hide = true, help = "No-op; JSON is always emitted on stdout")]
     pub json: bool,
+    /// Formato de saída: "json" ou "text". JSON é sempre emitido no stdout independente do valor.
+    #[arg(long, value_parser = ["json", "text"], hide = true)]
+    pub format: Option<String>,
     #[arg(long, env = "NEUROGRAPHRAG_DB_PATH")]
     pub db: Option<String>,
 }
@@ -28,6 +31,7 @@ struct SyncSafeCopyResponse {
 
 pub fn run(args: SyncSafeCopyArgs) -> Result<(), AppError> {
     let inicio = std::time::Instant::now();
+    let _ = args.format; // --format é no-op; JSON sempre emitido no stdout
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
     if !paths.db.exists() {
@@ -100,6 +104,7 @@ mod testes {
         let args = SyncSafeCopyArgs {
             dest: db_path.clone(),
             json: false,
+            format: None,
             db: Some("/tmp/mesmo.sqlite".to_string()),
         };
         // Simula resolução manual do caminho — valida lógica de rejeição

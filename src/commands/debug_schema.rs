@@ -30,7 +30,12 @@ struct MigrationRecord {
 
 #[derive(Serialize)]
 struct DebugSchemaResponse {
+    /// Contador interno do SQLite incrementado a cada DDL (PRAGMA schema_version).
+    /// Distinto de `user_version`: este é gerenciado automaticamente pelo SQLite.
     schema_version: i64,
+    /// Valor canônico SCHEMA_USER_VERSION definido explicitamente pelas migrações
+    /// (PRAGMA user_version). Distinto de `schema_version` (DDL counter SQLite)
+    /// e de `health.schema_version` (MAX version em refinery_schema_history).
     user_version: i64,
     objects: Vec<SchemaObject>,
     migrations: Vec<MigrationRecord>,

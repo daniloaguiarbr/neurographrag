@@ -204,10 +204,10 @@ neurographrag recall "$QUERY_USUARIO" --k 5 --json \
 
 ```bash
 # Forma curta — preferida em pipelines
-neurographrag recall --query "auth" --json | jaq '.results[].name'
+neurographrag recall "auth" --json | jaq '.results[].name'
 
 # Forma explícita — saída idêntica
-neurographrag recall --query "auth" --format json | jaq '.results[].name'
+neurographrag recall "auth" --format json | jaq '.results[].name'
 
 # Ambas as formas aceitas no mesmo pipeline
 neurographrag stats --json && neurographrag health --format json
@@ -242,6 +242,11 @@ neurographrag list | jaq '.items[].updated_at_iso'
 - `--max-concurrency` é limitado a `2×nCPUs`; valores maiores retornam exit 2
 - Exit code 2 sinaliza argumento inválido; reduza o valor e repita a invocação
 - Padrão de 4 slots é ótimo para a maioria dos laptops com dois a quatro núcleos
+
+### Idioma dos Textos de Ajuda das Flags Globais
+- As flags globais `--max-concurrency`, `--wait-lock`, `--lang` e `--tz` exibem textos de ajuda em português no output de `--help`
+- Decisão deliberada: doc comments do clap são escritos em português para alinhar com o idioma principal de desenvolvimento
+- O contrato JSON de saída e todos os nomes de flags são neutros ao idioma e idênticos independente de `--lang`
 
 
 ## Referência — Subcomandos Não Cobertos no Início Rápido

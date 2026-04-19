@@ -544,7 +544,7 @@ fn recuperar_contexto_agente(namespace: &str, consulta: &str, k: u8) -> anyhow::
         .output()?;
     anyhow::ensure!(output.status.success(), "neurographrag recall falhou");
     let parsed: Value = serde_json::from_slice(&output.stdout)?;
-    let itens = parsed["items"]
+    let itens = parsed["results"]
         .as_array()
         .unwrap_or(&vec![])
         .iter()
@@ -597,7 +597,7 @@ fn swarm_recuperar_todos(agent_ids: &[&str], consulta: &str) -> anyhow::Result<V
             .output()?;
         if output.status.success() {
             let parsed: serde_json::Value = serde_json::from_slice(&output.stdout)?;
-            if let Some(itens) = parsed["items"].as_array() {
+            if let Some(itens) = parsed["results"].as_array() {
                 for item in itens {
                     if let Some(body) = item["body"].as_str() {
                         resultados.push((agent_id.to_string(), body.to_owned()));
@@ -664,7 +664,7 @@ async fn recuperar_contexto_relevante(
         .output()?;
     anyhow::ensure!(output.status.success(), "hybrid-search falhou");
     let parsed: serde_json::Value = serde_json::from_slice(&output.stdout)?;
-    let contexto = parsed["items"]
+    let contexto = parsed["results"]
         .as_array()
         .unwrap_or(&vec![])
         .iter()
@@ -728,7 +728,7 @@ fn carregar_historico_cascade(namespace: &str, prompt: &str) -> anyhow::Result<S
         .output()?;
     anyhow::ensure!(output.status.success(), "recall falhou para histórico cascade");
     let parsed: serde_json::Value = serde_json::from_slice(&output.stdout)?;
-    let historico = parsed["items"]
+    let historico = parsed["results"]
         .as_array()
         .unwrap_or(&vec![])
         .iter()
@@ -784,7 +784,7 @@ fn recuperar_offline(consulta: &str, k: u8) -> anyhow::Result<Vec<String>> {
         .output()?;
     anyhow::ensure!(output.status.success(), "recuperar offline falhou");
     let parsed: serde_json::Value = serde_json::from_slice(&output.stdout)?;
-    let itens = parsed["items"]
+    let itens = parsed["results"]
         .as_array()
         .unwrap_or(&vec![])
         .iter()

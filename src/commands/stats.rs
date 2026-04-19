@@ -12,6 +12,9 @@ pub struct StatsArgs {
     /// Flag explícita de saída JSON. Aceita como no-op pois o output já é JSON por default.
     #[arg(long, default_value_t = false)]
     pub json: bool,
+    /// Formato de saída: "json" ou "text". JSON é sempre emitido no stdout independente do valor.
+    #[arg(long, value_parser = ["json", "text"], hide = true)]
+    pub format: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -43,6 +46,7 @@ struct StatsResponse {
 pub fn run(args: StatsArgs) -> Result<(), AppError> {
     let inicio = std::time::Instant::now();
     let _ = args.json; // --json é no-op pois output já é JSON por default
+    let _ = args.format; // --format é no-op; JSON sempre emitido no stdout
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
     if !paths.db.exists() {

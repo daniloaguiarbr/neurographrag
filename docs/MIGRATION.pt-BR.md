@@ -31,7 +31,7 @@
 
 ### Passo 1 — Instalar o novo binário
 ```bash
-cargo install neurographrag --version 2.1.0
+cargo install neurographrag --version 2.3.0
 ```
 
 ### Passo 2 — Aplicar migrações de schema
@@ -55,6 +55,23 @@ neurographrag stats --json
 - Atualizar pipelines `jaq` de `.[]` para `.items[]` para saída de lista
 - `recall --json` e `hybrid-search --json` retornam `{"results": [...]}`
 - Atualizar pipelines `jaq` de `.[]` para `.results[]` para saída de busca
+
+
+## Atualizando de 2.2.x para 2.3.x
+
+
+### O Que Mudou na v2.3.0
+- Sem alterações de schema — `migrate` não é necessário ao atualizar de v2.2.x
+- `recall` agora exige argumento posicional QUERY; a flag `--query` foi removida
+- Flags canônicas do `rename` são `--name`/`--new-name`; aliases `--old`/`--new` permanecem disponíveis
+- `unlink` exige a flag `--relation`; a flag já era obrigatória mas agora é validada no nível do parser
+- Correções de campos de saída: `recall --json` e `hybrid-search --json` retornam array `results`, não `items`
+- Flags globais `--max-concurrency`, `--wait-lock`, `--lang` e `--tz` exibem textos de ajuda em português no output de `--help` — decisão deliberada alinhada ao idioma principal de desenvolvimento
+
+### Passos de Migração Para Usuários de 2.2.x
+- Atualizar scripts usando `recall --query VALOR` para usar `recall VALOR` (argumento posicional)
+- Verificar se pipelines que leem `.items[]` de saída de `recall` ou `hybrid-search` usam `.results[]`
+- Nenhuma migração de banco é necessária; o schema não mudou entre v2.2.x e v2.3.x
 
 
 ## Mudanças em Códigos de Saída

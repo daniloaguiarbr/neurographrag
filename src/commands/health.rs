@@ -14,6 +14,9 @@ pub struct HealthArgs {
     /// Flag explícita de saída JSON. Aceita como no-op pois o output já é JSON por default.
     #[arg(long, default_value_t = false)]
     pub json: bool,
+    /// Formato de saída: "json" ou "text". JSON é sempre emitido no stdout independente do valor.
+    #[arg(long, value_parser = ["json", "text"], hide = true)]
+    pub format: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -46,7 +49,9 @@ struct HealthResponse {
     counts: HealthCounts,
     db_path: String,
     db_size_bytes: u64,
-    /// Versão do schema aplicado via refinery (inteiro, compatível com u32).
+    /// MAX(version) da tabela refinery_schema_history — número da última migração aplicada.
+    /// Distinto de PRAGMA schema_version (DDL counter SQLite) e PRAGMA user_version
+    /// (valor canônico SCHEMA_USER_VERSION de __debug_schema).
     schema_version: u32,
     /// Lista de entidades referenciadas por memórias mas ausentes na tabela de entidades.
     /// Vazio em DB saudável. Conforme contrato documentado em AGENT_PROTOCOL.md.
@@ -73,6 +78,7 @@ fn table_exists(conn: &rusqlite::Connection, table_name: &str) -> bool {
 pub fn run(args: HealthArgs) -> Result<(), AppError> {
     let inicio = Instant::now();
     let _ = args.json; // --json é no-op pois output já é JSON por default
+    let _ = args.format; // --format é no-op; JSON sempre emitido no stdout
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
     if !paths.db.exists() {
