@@ -12,7 +12,7 @@ pub struct PurgeArgs {
     pub namespace: Option<String>,
     /// Dias de retenção: memórias com deleted_at mais antigo que (now - retention_days*86400) serão
     /// permanentemente removidas. Default: PURGE_RETENTION_DAYS_DEFAULT (90).
-    #[arg(long, value_name = "DAYS", default_value_t = crate::constants::PURGE_RETENTION_DAYS_DEFAULT)]
+    #[arg(long, alias = "days", value_name = "DAYS", default_value_t = crate::constants::PURGE_RETENTION_DAYS_DEFAULT)]
     pub retention_days: u32,
     /// [DEPRECATED em v2.0.0] Alias legado — use --retention-days em vez disso.
     #[arg(long, hide = true)]

@@ -52,14 +52,18 @@ fn main() {
 
     // Validar flags antes de qualquer inicialização pesada.
     if let Err(msg) = cli.validate_flags() {
-        eprintln!("erro: {msg}");
+        let prefix = match neurographrag::i18n::current() {
+            neurographrag::i18n::Language::English => "error",
+            neurographrag::i18n::Language::Portugues => "erro",
+        };
+        eprintln!("{prefix}: {msg}");
         std::process::exit(2);
     }
 
     // Verificar disponibilidade de memória antes de carregar o modelo ONNX.
     if !cli.skip_memory_guard {
         if let Err(e) = check_available_memory(MIN_AVAILABLE_MEMORY_MB) {
-            eprintln!("Error: {e}");
+            eprintln!("Error: {}", e.localized_message());
             std::process::exit(e.exit_code());
         }
     }
@@ -73,7 +77,7 @@ fn main() {
     let (_lock_handle, _slot) = match acquire_cli_slot(max_concurrency, Some(wait_secs)) {
         Ok(pair) => pair,
         Err(e) => {
-            eprintln!("Error: {e}");
+            eprintln!("Error: {}", e.localized_message());
             std::process::exit(e.exit_code());
         }
     };
@@ -118,7 +122,7 @@ fn main() {
 
     if let Err(e) = result {
         tracing::error!(error = %e);
-        eprintln!("Error: {e}");
+        eprintln!("Error: {}", e.localized_message());
         std::process::exit(e.exit_code());
     }
 }

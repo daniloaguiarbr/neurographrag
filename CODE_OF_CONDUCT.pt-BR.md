@@ -62,26 +62,26 @@ Leia este documento em [inglês (EN)](CODE_OF_CONDUCT.md).
 - Líderes da comunidade seguirão estas Diretrizes de Impacto Comunitário ao determinar consequências
 - Cada diretriz associa a ação à gravidade da violação observada
 ### 1. Correção
-- Impacto Comunitário — Uso de linguagem inapropriada ou comportamento não profissional ou indesejado
-- Consequência — Aviso privado por escrito dos líderes trazendo clareza sobre a violação
+- Impacto Comunitário: Uso de linguagem inapropriada ou comportamento não profissional ou indesejado
+- Consequência: Aviso privado por escrito dos líderes trazendo clareza sobre a violação
 - Pedido de desculpas público pode ser solicitado quando apropriado ao contexto
 ### 2. Advertência
-- Impacto Comunitário — Uma violação através de incidente único ou série de ações relacionadas
-- Consequência — Uma advertência com consequências para comportamento continuado
+- Impacto Comunitário: Uma violação através de incidente único ou série de ações relacionadas
+- Consequência: Uma advertência com consequências para comportamento continuado
 - Sem interação com as pessoas envolvidas por período de tempo especificado
 - Isso inclui interação não solicitada com quem está aplicando o Código de Conduta
 - Violar estes termos pode levar a banimento temporário ou permanente
 ### 3. Banimento Temporário
-- Impacto Comunitário — Violação séria dos padrões da comunidade, incluindo comportamento sustentado
-- Consequência — Banimento temporário de qualquer interação ou comunicação pública por período especificado
+- Impacto Comunitário: Violação séria dos padrões da comunidade, incluindo comportamento sustentado
+- Consequência: Banimento temporário de qualquer interação ou comunicação pública por período especificado
 - Nenhuma interação pública ou privada com as pessoas envolvidas é permitida durante este período
 - Isso inclui interação não solicitada com quem está aplicando o Código de Conduta
 - Violar estes termos pode levar a banimento permanente
 ### 4. Banimento Permanente
-- Impacto Comunitário — Demonstração de padrão de violação dos padrões da comunidade
+- Impacto Comunitário: Demonstração de padrão de violação dos padrões da comunidade
 - Consequência inclui comportamento sustentado inapropriado e assédio contra indivíduo
 - Consequência também inclui agressão ou depreciação contra classes de indivíduos
-- Consequência — Banimento permanente de qualquer interação pública dentro da comunidade
+- Consequência: Banimento permanente de qualquer interação pública dentro da comunidade
 
 
 ## Atribuição

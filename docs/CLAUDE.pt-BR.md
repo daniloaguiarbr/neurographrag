@@ -1,7 +1,7 @@
-# CLAUDE.md — Instruções para Claude Code Trabalhando em neurographrag
+# CLAUDE.md: Instruções para Claude Code Trabalhando em neurographrag
 
 
-## Regra Zero — Lei Inviolável
+## Regra Zero: Lei Inviolável
 - Este documento é LEI SUPREMA para sessões do Claude Code em neurographrag.
 - Você DEVE reler este documento ANTES de CADA ação.
 - Você DEVE citar a regra aplicável ANTES de agir sobre ela.

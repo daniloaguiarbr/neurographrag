@@ -1,0 +1,79 @@
+# neurographrag
+
+> Memória persistente para 27 agentes de IA em um único binário Rust de 25 MB
+
+27 agentes de IA. Um binário de 25 MB. Zero chamadas em nuvem. neurographrag entrega a qualquer assistente de programação IA uma camada de memória local, rápida e privada, baseada em um único arquivo SQLite, sem conta no Pinecone, sem fatura de embeddings da OpenAI, sem cluster Docker para manter. Recall em menos de 50 ms. Recuperação nativa em grafo. Saída JSON determinística pronta para orquestração em pipelines.
+
+
+## Documentação Principal
+### Fontes canônicas em inglês para ingestão por LLMs
+- [README](https://github.com/daniloaguiarbr/neurographrag/blob/main/README.md): instalação completa, referência de comandos, tabela de integrações e FAQ
+- [HOW_TO_USE](https://github.com/daniloaguiarbr/neurographrag/blob/main/docs/HOW_TO_USE.md): passo a passo da instalação até o primeiro hybrid search em 60 segundos
+- [COOKBOOK](https://github.com/daniloaguiarbr/neurographrag/blob/main/docs/COOKBOOK.md): trinta receitas cobrindo ingestão, recuperação, travessia de grafo, backup e auditoria
+- [AGENTS](https://github.com/daniloaguiarbr/neurographrag/blob/main/docs/AGENTS.md): guia persuasivo para autores de agentes IA: economia, contrato JSON, roteamento por exit codes
+- [INTEGRATIONS](https://github.com/daniloaguiarbr/neurographrag/blob/main/INTEGRATIONS.md): configuração específica por fornecedor para todos os 27 agentes e IDEs suportados
+- [AGENT_PROTOCOL](https://github.com/daniloaguiarbr/neurographrag/blob/main/docs/AGENT_PROTOCOL.md): especificação imperativa stdin/stdout, schemas JSON e protocolo de concorrência
+- [CHANGELOG](https://github.com/daniloaguiarbr/neurographrag/blob/main/CHANGELOG.md): histórico completo de versões com notas de migração
+- [CONTRIBUTING](https://github.com/daniloaguiarbr/neurographrag/blob/main/CONTRIBUTING.md): fluxo de pull request e padrões de código
+- [SECURITY](https://github.com/daniloaguiarbr/neurographrag/blob/main/SECURITY.md): política de divulgação responsável e canal de contato
+- [CODE_OF_CONDUCT](https://github.com/daniloaguiarbr/neurographrag/blob/main/CODE_OF_CONDUCT.md): padrões da comunidade
+
+
+## Comandos Principais
+### Subcomandos agrupados por ciclo de vida
+- `init` inicializa o banco SQLite e baixa o modelo de embeddings uma única vez
+- `remember` salva uma memória com nome, tipo, descrição, corpo e grafo de entidades opcional
+- `recall` realiza busca por similaridade vetorial KNN sobre as memórias armazenadas
+- `hybrid-search` funde FTS5 full-text e KNN vetorial via Reciprocal Rank Fusion
+- `read` `list` `forget` `rename` `edit` `history` `restore` gerenciam o ciclo de vida da memória
+- `link` `unlink` `related` gerenciam relacionamentos tipados entre entidades para travessia multi-hop
+- `health` `stats` `migrate` `vacuum` `optimize` `sync-safe-copy` gerenciam o banco de dados
+- `purge` `namespace-detect` cuidam de manutenção e resolução de escopo
+
+
+## Variáveis de Ambiente
+### Superfície de configuração em tempo de execução
+- `NEUROGRAPHRAG_DB_PATH` caminho absoluto para o arquivo SQLite do banco de dados
+- `NEUROGRAPHRAG_CACHE_DIR` diretório para os arquivos de cache do modelo de embeddings
+- `NEUROGRAPHRAG_LOG_LEVEL` nível de filtro de rastreamento com valores de `error` a `trace`
+- `NEUROGRAPHRAG_LANG` idioma de saída da CLI com valores `en` ou `pt`
+- `NEUROGRAPHRAG_NAMESPACE` override de namespace ignorando a detecção automática
+
+
+## Exit Codes
+### Status determinístico para roteamento em pipelines
+- `0` sucesso: continue o loop do agente
+- `1` falha de validação ou runtime: registre e informe o operador
+- `2` duplicata detectada ou argumento CLI inválido: corrija e tente novamente
+- `3` conflito de atualização otimista: releia `updated_at` e tente novamente
+- `4` memória ou entidade não encontrada: trate o recurso ausente com elegância
+- `5` namespace não pôde ser resolvido: passe `--namespace` explicitamente
+- `6` payload excedeu os limites configurados: divida o corpo em partes menores
+- `10` erro no banco de dados SQLite: execute `health` para inspecionar integridade
+- `11` geração de embedding falhou: verifique os arquivos do modelo e tente novamente
+- `12` extensão sqlite-vec falhou ao carregar: reinstale com a extensão bundled
+- `13` falha parcial em batch: respeite o backoff e tente novamente
+- `14` erro de I/O no sistema de arquivos
+- `15` banco de dados ocupado após tentativas: aguarde e tente novamente
+- `20` erro interno ou de serialização JSON
+- `73` guarda de memória rejeitou condição de pouca RAM
+- `75` EX_TEMPFAIL: todos os slots de concorrência ocupados, tente com backoff
+- `77` RAM disponível abaixo do mínimo necessário para carregar o modelo de embeddings
+
+
+## Referências Opcionais
+### Materiais complementares para contexto mais profundo
+- [Guia CLAUDE](https://github.com/daniloaguiarbr/neurographrag/blob/main/docs/CLAUDE.md): padrões de invocação específicos para Claude Code e estratégias de memória de sessão
+- [Definições de SKILL](https://github.com/daniloaguiarbr/neurographrag/tree/main/skill/neurographrag-en): skills de slash-command pré-construídas para o harness Claude Code
+- [Pacote crates.io](https://crates.io/crates/neurographrag): binário publicado com semver e metadados de MSRV
+- [Referência API docs.rs](https://docs.rs/neurographrag): rustdoc para consumidores da biblioteca
+
+
+## Fatos Estáveis
+### Identidade e metadados de versão
+- Nome do pacote `neurographrag` publicado no crates.io sob MIT OR Apache-2.0
+- Versão atual 2.0.2 com MSRV Rust 1.88 declarado no `Cargo.toml`
+- Repositório `https://github.com/daniloaguiarbr/neurographrag` com CI em push e tag
+- Modelo de embeddings `multilingual-e5-small` quantizado via `fastembed` com aproximadamente 750 MB de RAM
+- Camada de armazenamento `rusqlite` com SQLite bundled mais extensão `sqlite-vec` e módulo FTS5
+- Até quatro instâncias simultâneas suportadas via semáforo de contagem com locks advisory `fs4`

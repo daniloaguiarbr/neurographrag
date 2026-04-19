@@ -59,7 +59,7 @@ Read this document in [Portuguese (pt-BR)](SECURITY.pt-BR.md).
 
 ## Hall of Fame
 - We publicly acknowledge researchers who report vulnerabilities responsibly
-- This section is open to contributions — your name will be added after coordinated disclosure
+- This section is open to contributions: your name will be added after coordinated disclosure
 - If you prefer anonymity, we honor that preference without exception
 
 

@@ -1,5 +1,6 @@
 # neurographrag
 
+27 agentes de IA. Um binário de 25 MB. Zero chamadas à nuvem.
 
 [![Crates.io](https://img.shields.io/crates/v/neurographrag.svg)](https://crates.io/crates/neurographrag)
 [![docs.rs](https://img.shields.io/docsrs/neurographrag)](https://docs.rs/neurographrag)
@@ -9,7 +10,7 @@
 [![MSRV](https://img.shields.io/crates/msrv/neurographrag)](https://crates.io/crates/neurographrag)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
-> Memória persistente para 21 agentes de IA em um único binário Rust de 25 MB
+> Memória persistente para 27 agentes de IA em um binário Rust de 25 MB
 
 - Versão em inglês disponível em [README.md](README.md)
 
@@ -41,11 +42,12 @@ cargo install --locked neurographrag
 ### Contrato de CLI de primeira classe para orquestração
 - Todo subcomando aceita `--json` produzindo payloads determinísticos em stdout
 - Toda invocação é stateless com códigos de saída explícitos para decisões de roteamento
+- Nota: a CLI é stateless — cada invocação recarrega o modelo de embeddings (~1s); modo daemon com latência <50ms está planejado para v3.0.0
 - Toda escrita é idempotente via restrições de unicidade em `--name` kebab-case
 - Stdin aceita corpos ou payloads JSON para entidades e relacionamentos em lote
 - Stderr carrega saída de tracing apenas sob `NEUROGRAPHRAG_LOG_LEVEL=debug`
 - Comportamento cross-platform é idêntico em hosts Linux, macOS e Windows
-### 21 agentes de IA e IDEs suportados de imediato
+### 27 agentes de IA e IDEs suportados de imediato
 | Agente | Fornecedor | Versão mínima | Padrão de integração |
 | --- | --- | --- | --- |
 | Claude Code | Anthropic | 1.0 | Subprocesso com stdout `--json` |
@@ -69,6 +71,12 @@ cargo install --locked neurographrag
 | Augment Code | Augment | 1.0 | Envolvimento de comando de terminal |
 | JetBrains AI Assistant | JetBrains | 2024.3 | External tool por IDE |
 | OpenRouter | OpenRouter | 1.0 | Roteamento de função via shell |
+| Minimax | Minimax | 1.0 | Invocação via subprocesso |
+| Z.ai | Z.ai | 1.0 | Invocação via subprocesso |
+| Ollama | Ollama | 0.1 | Invocação via subprocesso |
+| Hermes Agent | Comunidade | 1.0 | Invocação via subprocesso |
+| LangChain | LangChain | 0.3 | Subprocesso via tool |
+| LangGraph | LangChain | 0.2 | Subprocesso via nó |
 
 
 ## Início Rápido
@@ -219,7 +227,7 @@ RUN cargo install --locked neurographrag
 | `15` | Banco ocupado após tentativas (movido de 13 na v2.0) |
 | `20` | Erro interno ou de serialização JSON |
 | `73` | Memory guard rejeitou condição de baixa RAM |
-| `75` | `EX_TEMPFAIL` — todos os slots de concorrência ocupados |
+| `75` | `EX_TEMPFAIL`: todos os slots de concorrência ocupados |
 | `77` | RAM disponível abaixo do mínimo para carregar o modelo |
 
 
@@ -250,6 +258,160 @@ RUN cargo install --locked neurographrag
 - Permissão negada no Linux indica falta de escrita no diretório de cache do usuário
 - Detecção de namespace cai para `default` quando não há marcador `.neurographrag`
 - Invocações paralelas acima de quatro slots recebem saída 75 e DEVEM tentar com backoff
+
+
+## Crates Rust Compatíveis
+### Invoque neurographrag de qualquer framework Rust de IA via subprocesso
+- Cada crate chama o binário via `std::process::Command` com a flag `--json`
+- Nenhuma memória compartilhada ou FFI necessária: o contrato é JSON puro em stdout
+- Fixe a versão do binário no `Cargo.toml` do workspace para builds reproduzíveis
+- Todos os 18 crates abaixo funcionam identicamente em Linux, macOS e Windows
+
+### rig-core
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["recall", "project goals", "--k", "5", "--json"])
+    .output().unwrap();
+```
+
+### swarms-rs
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["hybrid-search", "agent memory", "--k", "10", "--json"])
+    .output().unwrap();
+```
+
+### autoagents
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["remember", "--name", "task-context", "--type", "project",
+           "--description", "current sprint goal", "--body", "finish auth module"])
+    .output().unwrap();
+```
+
+### graphbit
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["recall", "decision log", "--k", "3", "--json"])
+    .output().unwrap();
+```
+
+### agentai
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["hybrid-search", "previous decisions", "--k", "5", "--json"])
+    .output().unwrap();
+```
+
+### llm-agent-runtime
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["recall", "user preferences", "--k", "5", "--json"])
+    .output().unwrap();
+```
+
+### anda
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["stats", "--json"])
+    .output().unwrap();
+```
+
+### adk-rust
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["recall", "tool outputs", "--k", "5", "--json"])
+    .output().unwrap();
+```
+
+### rs-graph-llm
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["hybrid-search", "graph relations", "--k", "10", "--json"])
+    .output().unwrap();
+```
+
+### genai
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["recall", "model context", "--k", "5", "--json"])
+    .output().unwrap();
+```
+
+### liter-llm
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["remember", "--name", "session-notes", "--type", "user",
+           "--description", "resumo da sessão", "--body", "discutimos arquitetura"])
+    .output().unwrap();
+```
+
+### llm-cascade
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["recall", "fallback context", "--k", "3", "--json"])
+    .output().unwrap();
+```
+
+### async-openai
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["recall", "system prompt history", "--k", "5", "--json"])
+    .output().unwrap();
+```
+
+### async-llm
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["hybrid-search", "chat context", "--k", "5", "--json"])
+    .output().unwrap();
+```
+
+### anthropic-sdk
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["recall", "tool use patterns", "--k", "5", "--json"])
+    .output().unwrap();
+```
+
+### ollama-rs
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["recall", "local model outputs", "--k", "5", "--json"])
+    .output().unwrap();
+```
+
+### mistral-rs
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["hybrid-search", "inference context", "--k", "10", "--json"])
+    .output().unwrap();
+```
+
+### llama-cpp-rs
+```rust
+use std::process::Command;
+let out = Command::new("neurographrag")
+    .args(["recall", "llama session context", "--k", "5", "--json"])
+    .output().unwrap();
+```
 
 
 ## Contribuindo

@@ -62,26 +62,26 @@ Read this document in [Portuguese (pt-BR)](CODE_OF_CONDUCT.pt-BR.md).
 - Community leaders will follow these Community Impact Guidelines in determining consequences
 - Each guideline matches the action with the severity of the violation observed
 ### 1. Correction
-- Community Impact — Use of inappropriate language or unprofessional or unwelcome behavior
-- Consequence — A private, written warning from community leaders providing clarity about violation
+- Community Impact: Use of inappropriate language or unprofessional or unwelcome behavior
+- Consequence: A private, written warning from community leaders providing clarity about violation
 - A public apology may be requested when appropriate to the context
 ### 2. Warning
-- Community Impact — A violation through a single incident or series of related actions
-- Consequence — A warning with consequences for continued behavior
+- Community Impact: A violation through a single incident or series of related actions
+- Consequence: A warning with consequences for continued behavior
 - No interaction with the people involved for a specified period of time
 - This includes unsolicited interaction with those enforcing the Code of Conduct
 - Violating these terms may lead to a temporary or permanent ban
 ### 3. Temporary Ban
-- Community Impact — A serious violation of community standards, including sustained inappropriate behavior
-- Consequence — A temporary ban from any sort of interaction or public communication for a specified period
+- Community Impact: A serious violation of community standards, including sustained inappropriate behavior
+- Consequence: A temporary ban from any sort of interaction or public communication for a specified period
 - No public or private interaction with the people involved is allowed during this period
 - This includes unsolicited interaction with those enforcing the Code of Conduct
 - Violating these terms may lead to a permanent ban
 ### 4. Permanent Ban
-- Community Impact — Demonstrating a pattern of violation of community standards
+- Community Impact: Demonstrating a pattern of violation of community standards
 - Consequence includes sustained inappropriate behavior and harassment of an individual
 - Consequence also includes aggression toward or disparagement of classes of individuals
-- Consequence — A permanent ban from any sort of public interaction within the community
+- Consequence: A permanent ban from any sort of public interaction within the community
 
 
 ## Attribution

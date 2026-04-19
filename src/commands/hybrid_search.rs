@@ -32,6 +32,9 @@ pub struct HybridSearchArgs {
     pub format: OutputFormat,
     #[arg(long, env = "NEUROGRAPHRAG_DB_PATH")]
     pub db: Option<String>,
+    /// Aceita --json como no-op: output já é JSON por default.
+    #[arg(long, hide = true)]
+    pub json: bool,
 }
 
 #[derive(serde::Serialize)]

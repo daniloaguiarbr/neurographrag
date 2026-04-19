@@ -59,7 +59,7 @@ Leia este documento em [inglês (EN)](SECURITY.md).
 
 ## Hall da Fama
 - Reconhecemos publicamente pesquisadores que reportam vulnerabilidades de forma responsável
-- Esta seção está aberta a contribuições — seu nome será adicionado após divulgação coordenada
+- Esta seção está aberta a contribuições: seu nome será adicionado após divulgação coordenada
 - Se preferir anonimato, respeitamos essa preferência sem exceção
 
 

@@ -1,4 +1,5 @@
 use crate::commands::*;
+use crate::i18n::{current, Language};
 use clap::{Parser, Subcommand};
 
 /// Retorna o número máximo de invocações simultâneas permitidas pela heurística de CPU.
@@ -89,17 +90,28 @@ pub struct Cli {
 }
 
 impl Cli {
-    /// Valida flags de concorrência e retorna erro descritivo se inválidas.
+    /// Valida flags de concorrência e retorna erro descritivo localizado se inválidas.
+    ///
+    /// Requer que `crate::i18n::init()` já tenha sido chamado (ocorre antes desta função
+    /// no fluxo de `main`). Em inglês emite mensagens EN; em português emite PT.
     pub fn validate_flags(&self) -> Result<(), String> {
         if let Some(n) = self.max_concurrency {
             if n == 0 {
-                return Err("--max-concurrency deve ser >= 1".to_string());
+                return Err(match current() {
+                    Language::English => "--max-concurrency must be >= 1".to_string(),
+                    Language::Portugues => "--max-concurrency deve ser >= 1".to_string(),
+                });
             }
             let teto = max_concurrency_ceiling();
             if n > teto {
-                return Err(format!(
-                    "--max-concurrency {n} excede o teto de {teto} (2×nCPUs) neste sistema"
-                ));
+                return Err(match current() {
+                    Language::English => format!(
+                        "--max-concurrency {n} exceeds the ceiling of {teto} (2×nCPUs) on this system"
+                    ),
+                    Language::Portugues => format!(
+                        "--max-concurrency {n} excede o teto de {teto} (2×nCPUs) neste sistema"
+                    ),
+                });
             }
         }
         Ok(())

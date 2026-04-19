@@ -5,7 +5,7 @@ Leia este documento em [inglês (EN)](CONTRIBUTING.md).
 
 
 ## Boas-vindas
-- Obrigado por considerar uma contribuição — cada pull request fortalece a memória GraphRAG local
+- Obrigado por considerar uma contribuição: cada pull request fortalece a memória GraphRAG local
 - Suas melhorias afetam diretamente desenvolvedores usando LLMs com memória durável em um único arquivo SQLite
 - Código, documentação, testes, relatos de bug e ideias são contribuições igualmente valorizadas
 - Este guia mantém seu onboarding em menos de 10 minutos do clone ao primeiro teste local
@@ -31,7 +31,7 @@ cargo doc --no-deps --all-features
 - Instale Rust via `rustup` e fixe a toolchain com `rustup default 1.88.0` ao reproduzir CI
 ### Pinagem de dependências
 - Pin direto `constant_time_eq = "=0.4.2"` protege o MSRV 1.88 de drift transitivo via `blake3`
-- JAMAIS rode `cargo update` indiscriminadamente — sempre abra PR explicando o bump de versão
+- JAMAIS rode `cargo update` indiscriminadamente; sempre abra PR explicando o bump de versão
 - O lockfile `Cargo.lock` DEVE ser commitado porque este repositório entrega um binário CLI
 ### Requisitos de runtime
 - SQLite 3.40 ou mais novo é exigido em runtime devido a `sqlite-vec` e FTS5 external-content
@@ -56,7 +56,7 @@ cargo doc --no-deps --all-features
 - Use `chore` para ferramentas, CI ou manutenção de repositório
 - Use `test` para adicionar ou melhorar testes
 - Use `ci` para mudanças no pipeline de CI
-- JAMAIS adicione `Co-authored-by` de agentes de IA em mensagens de commit — regra aplicada pelo CI
+- JAMAIS adicione `Co-authored-by` de agentes de IA em mensagens de commit: regra aplicada pelo CI
 
 
 ## Processo de Pull Request
@@ -102,7 +102,7 @@ cargo doc --no-deps --all-features
 
 ## Como Solicitar Funcionalidades
 - Abra uma issue usando o template Feature Request no GitHub
-- Descreva o caso de uso concreto e quem se beneficia — evite formato abstrato de lista de desejos
+- Descreva o caso de uso concreto e quem se beneficia; evite formato abstrato de lista de desejos
 - Descreva pelo menos uma alternativa considerada e por que não atendeu
 - Referencie qualquer seção do PRD upstream ou issue relacionada quando aplicável
 
@@ -123,4 +123,4 @@ cargo doc --no-deps --all-features
 
 ## Dúvidas
 - Abra uma GitHub Discussion para questões de design ou temas amplos não ligados a issue específica
-- Use Security Advisories para qualquer coisa que se pareça com questão de segurança — veja SECURITY.md
+- Use Security Advisories para qualquer coisa que se pareça com questão de segurança; veja SECURITY.md

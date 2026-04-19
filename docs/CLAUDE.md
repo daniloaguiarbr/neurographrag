@@ -1,7 +1,7 @@
-# CLAUDE.md — Instructions for Claude Code Working on neurographrag
+# CLAUDE.md: Instructions for Claude Code Working on neurographrag
 
 
-## Rule Zero — Inviolable Law
+## Rule Zero: Inviolable Law
 - This document is SUPREME LAW for Claude Code sessions on neurographrag.
 - You MUST re-read this document BEFORE every action.
 - You MUST cite the applicable rule BEFORE acting on it.
@@ -179,6 +179,7 @@
 - VS Code Copilot, Google Antigravity, Windsurf, Cursor, Zed consume this CLI.
 - Aider, Jules, Kilo Code, Roo Code, Cline, Continue consume this CLI.
 - Factory, Augment Code, JetBrains AI Assistant, OpenRouter consume this CLI.
+- Minimax, Z.ai, Ollama, Hermes Agent, LangChain, LangGraph consume this CLI.
 - Every agent MUST honor the JSON contract and exit-code table from this repo.
 
 

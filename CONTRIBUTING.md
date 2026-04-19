@@ -5,7 +5,7 @@ Read this document in [Portuguese (pt-BR)](CONTRIBUTING.pt-BR.md).
 
 
 ## Welcome
-- Thank you for considering a contribution — every pull request strengthens local GraphRAG memory
+- Thank you for considering a contribution: every pull request strengthens local GraphRAG memory
 - Your improvements directly affect developers using LLMs with durable memory in a single SQLite file
 - Code, documentation, tests, bug reports, and ideas are equally valued contributions
 - This guide keeps your onboarding under 10 minutes from clone to first local test run
@@ -31,7 +31,7 @@ cargo doc --no-deps --all-features
 - Install Rust via `rustup` and pin the toolchain with `rustup default 1.88.0` when reproducing CI
 ### Dependency pinning
 - Direct pin `constant_time_eq = "=0.4.2"` protects MSRV 1.88 from transitive drift via `blake3`
-- JAMAIS run `cargo update` indiscriminately — always open a PR explaining the version bump
+- JAMAIS run `cargo update` indiscriminately; always open a PR explaining the version bump
 - Lockfile `Cargo.lock` MUST be committed because this repository ships a binary CLI
 ### Runtime requirements
 - SQLite 3.40 or newer is required at runtime due to `sqlite-vec` and FTS5 external-content
@@ -56,7 +56,7 @@ cargo doc --no-deps --all-features
 - Use `chore` for tooling, CI, or repository maintenance
 - Use `test` for adding or improving tests
 - Use `ci` for CI pipeline changes
-- JAMAIS add `Co-authored-by` for AI agents in commit messages — this is enforced by CI
+- JAMAIS add `Co-authored-by` for AI agents in commit messages: this is enforced by CI
 
 
 ## Pull Request Process
@@ -102,7 +102,7 @@ cargo doc --no-deps --all-features
 
 ## How to Request Features
 - Open an issue using the Feature Request template on GitHub
-- Describe the concrete use case and who benefits — avoid abstract wish-list framing
+- Describe the concrete use case and who benefits; avoid abstract wish-list framing
 - Describe at least one alternative you considered and why it did not fit
 - Reference any upstream PRD section or related issue when applicable
 
@@ -123,4 +123,4 @@ cargo doc --no-deps --all-features
 
 ## Questions
 - Open a GitHub Discussion for design questions or broader topics not tied to a specific issue
-- Use Security Advisories for anything that resembles a security issue — see SECURITY.md
+- Use Security Advisories for anything that resembles a security issue; see SECURITY.md

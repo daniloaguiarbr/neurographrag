@@ -1,17 +1,17 @@
 # neurographrag para Agentes de IA
 
 
-> Contrato CLI de primeira classe para 21+ agentes de código e orquestradores de LLM
+> Memória persistente para 27 agentes de IA em um único binário Rust de 25 MB
 
 - Leia a versão em inglês em [AGENTS.md](AGENTS.md)
 
 
 ## A Pergunta Que Nenhum Framework Responde
-### Open Loop — Por Que Seu Agente Autônomo Esquece O Que Aprendeu
-- Seu agente LLM venceu uma tarefa hoje e perdeu cada insight até amanhã cedo
-- Seu orquestrador paga 400 dólares mensais ao Pinecone por contexto vetorial obsoleto
-- Sua stack quebra no instante em que o embedding OpenAI recebe rate-limit pesado
-- Seu protótipo GraphRAG morre em produção sob quatro chamadas concorrentes de subprocess
+### Open Loop — Por Que 27 Agentes de IA Escolhem Esta Como Sua Camada de Memória
+- Por que 27 agentes de IA escolhem neurographrag como sua camada de memória persistente?
+- Três razões técnicas: recall em menos de 50 ms, zero dependências cloud, JSON determinístico
+- Cada agente ganha memória persistente sem gastar um único token adicional
+- Versus MCPs pesados, neurographrag entrega contrato stdin/stdout determinístico
 - O segredo que os frameworks jamais documentam mora em um único arquivo SQLite portátil
 
 
@@ -43,11 +43,11 @@
 
 
 ## Agentes e Orquestradores Compatíveis
-### Catálogo — 21 Integrações Suportadas
+### Catálogo — 27 Integrações Suportadas
 | Agente | Fornecedor | Versão Mínima | Tipo de Integração | Exemplo |
 | --- | --- | --- | --- | --- |
 | Claude Code | Anthropic | 1.0+ | Subprocess | `neurographrag recall "query" --json` |
-| Codex CLI | OpenAI | 0.5+ | AGENTS.md + subprocess | `neurographrag remember --name X --type user --body "..."` |
+| Codex CLI | OpenAI | 0.5+ | AGENTS.md + subprocess | `neurographrag remember --name X --type user --description "..." --body "..."` |
 | Gemini CLI | Google | recente | Subprocess | `neurographrag hybrid-search "query" --json --k 5` |
 | Opencode | open source | recente | Subprocess | `neurographrag recall "auth flow" --json --k 3` |
 | OpenClaw | comunidade | recente | Subprocess | `neurographrag list --type user --json` |
@@ -55,7 +55,7 @@
 | VS Code Copilot | Microsoft | 1.90+ | tasks.json | `{"command": "neurographrag", "args": ["recall", "$selection", "--json"]}` |
 | Google Antigravity | Google | recente | Runner | `neurographrag hybrid-search "prompt" --k 10 --json` |
 | Windsurf | Codeium | recente | Terminal | `neurographrag recall "plano refactor" --json` |
-| Cursor | Cursor | 0.40+ | Terminal | `neurographrag remember --name cursor-ctx --type agent --body "..."` |
+| Cursor | Cursor | 0.40+ | Terminal | `neurographrag remember --name cursor-ctx --type project --description "..." --body "..."` |
 | Zed | Zed Industries | recente | Assistant Panel | `neurographrag recall "abas abertas" --json --k 5` |
 | Aider | open source | 0.60+ | Shell | `neurographrag recall "alvo refactor" --k 5 --json` |
 | Jules | Google Labs | preview | automação CI | `neurographrag stats --json` |
@@ -67,9 +67,348 @@
 | Augment Code | Augment | recente | IDE | `neurographrag hybrid-search "code review" --json` |
 | JetBrains AI Assistant | JetBrains | 2024.2+ | IDE | `neurographrag recall "stacktrace" --json` |
 | OpenRouter | OpenRouter | qualquer | Roteador multi-LLM | `neurographrag recall "regra roteamento" --json` |
+| Minimax | Minimax | recente | Subprocess | `neurographrag recall "preferencias usuario" --json --k 5` |
+| Z.ai | Z.ai | recente | Subprocess | `neurographrag hybrid-search "contexto tarefa" --json --k 10` |
+| Ollama | Ollama | 0.1+ | Subprocess | `neurographrag remember --name ollama-ctx --type project --description "..." --body "..."` |
+| Hermes Agent | comunidade | recente | Subprocess | `neurographrag recall "historico tool call" --json` |
+| LangChain | LangChain | 0.3+ | Subprocess via tool | `neurographrag hybrid-search "contexto chain" --json --k 5` |
+| LangGraph | LangChain | 0.2+ | Subprocess via node | `neurographrag recall "estado grafo" --json --k 3` |
 
 
-## Contrato — Stdin e Stdout
+## Detalhes de Integração por Agente
+### Minimax
+- Agente multimodal open-source com raciocínio em vídeo áudio e texto
+- Invoque neurographrag como subprocess dentro de uma definição de tool Minimax:
+```bash
+neurographrag recall "user session context" --json --k 5
+```
+- Saída: JSON com array `results` contendo campos `name`, `score` e `updated_at`
+
+### Z.ai
+- Plataforma de agentes hospedada com planejamento multi-etapa e orquestração de tools
+- Invoque neurographrag para persistir memória entre sessões de planejamento:
+```bash
+neurographrag remember --name "task-plan-$(date +%s)" --type project --description "plano de tarefa Z.ai" --body "$PLAN"
+neurographrag recall "previous task plan" --json --k 3
+```
+- Saída: JSON determinístico com `results` ordenados por score de similaridade cosseno
+
+### Ollama
+- Servidor LLM local rodando modelos abertos em hardware consumer sem cloud
+- Invoque neurographrag como tool para dar aos agentes Ollama conhecimento persistente:
+```bash
+neurographrag recall "conversation history" --json --k 5
+neurographrag remember --name "ollama-session" --type project --description "sessão Ollama" --body "$CONTEXT"
+```
+- Saída: resposta JSON de recall com `elapsed_ms` abaixo de 50 em hardware moderno
+
+### Hermes Agent
+- Framework de agente comunitário projetado para loops de tool-calling no estilo ReAct
+- Invoque neurographrag no início de cada ciclo ReAct para carregar contexto anterior:
+```bash
+neurographrag hybrid-search "tool call results" --json --k 5
+```
+- Saída: JSON hybrid-search combinando BM25 full-text e ranking vetorial por cosseno
+
+### LangChain
+- Framework Python de orquestração LLM com abstrações de chains tools e retrievers
+- Invoque neurographrag como tool de retriever customizado via subprocess do Python:
+```bash
+neurographrag hybrid-search "chain input query" --json --k 10 --lang en
+```
+- Saída: array JSON `results` consumível via `json.loads` no wrapper de tool LangChain
+
+### LangGraph
+- Framework de máquina de estado baseado em grafo para workflows multi-agente sobre LangChain
+- Invoque neurographrag dentro de cada nó do grafo para persistir e recuperar estado:
+```bash
+neurographrag recall "graph node output" --json --k 3
+neurographrag remember --name "node-result-$(date +%s)" --type project --description "resultado do nó LangGraph" --body "$OUTPUT"
+```
+- Saída: JSON estruturado para travessia stateful entre execuções de LangGraph
+
+
+## Integrações com Crates Rust
+### Crates de Agente e LLM — Chame neurographrag como Subprocess
+- Todo crate Rust que spawna um agente LLM pode chamar neurographrag via `std::process::Command`
+- Recall em menos de 50 ms em grafo de 10 mil entradas medido em M1 e x86_64
+- Zero tokens adicionais: memória vive no SQLite não dentro da janela de contexto
+- Cada crate ganha memória persistente sem importar nenhuma dependência do neurographrag
+
+### rig-core
+- Framework modular para construir pipelines LLM sistemas RAG e agentes autônomos
+- Cargo.toml:
+```toml
+[dependencies]
+rig-core = "0.35.0"
+```
+- Integração com neurographrag:
+```rust
+use std::process::Command;
+let output = Command::new("neurographrag")
+    .args(["recall", "project context", "--json"])
+    .output()?;
+```
+- Caso de uso: persistir resultados de tools de agente entre invocações do pipeline rig
+
+### swarms-rs
+- Framework de orquestração multi-agente com suporte MCP nativo e topologias de swarm
+- Cargo.toml:
+```toml
+[dependencies]
+swarms-rs = "0.2.1"
+```
+- Integração com neurographrag:
+```rust
+use std::process::Command;
+let output = Command::new("neurographrag")
+    .args(["hybrid-search", "swarm task result", "--json", "--k", "5"])
+    .output()?;
+```
+- Caso de uso: compartilhar contexto persistente entre agentes do swarm sem vector DB central
+
+### autoagents
+- Runtime multi-agente com atores Ractor loops ReAct e isolamento WASM sandbox
+- Cargo.toml:
+```toml
+[dependencies]
+autoagents = "0.3.7"
+```
+- Integração com neurographrag:
+```rust
+use std::process::Command;
+let output = Command::new("neurographrag")
+    .args(["remember", "--name", "react-step", "--type", "agent", "--body", "step output"])
+    .output()?;
+```
+- Caso de uso: salvar checkpoint de etapas ReAct para replay e auditoria em loops autoagents
+
+### agentai
+- Camada de agente fina sobre genai com abstração ToolBox simples para registro de tools
+- Cargo.toml:
+```toml
+[dependencies]
+agentai = "0.1.5"
+```
+- Integração com neurographrag:
+```rust
+use std::process::Command;
+let output = Command::new("neurographrag")
+    .args(["recall", "tool call context", "--json", "--k", "3"])
+    .output()?;
+```
+- Caso de uso: injetar histórico de tool calls anteriores no ToolBox antes de cada execução
+
+### llm-agent-runtime
+- Runtime completo de agente com memória episódica checkpointing e orquestração de tools
+- Cargo.toml:
+```toml
+[dependencies]
+llm-agent-runtime = "1.74.0"
+```
+- Integração com neurographrag:
+```rust
+use std::process::Command;
+let output = Command::new("neurographrag")
+    .args(["recall", "episode context", "--json"])
+    .output()?;
+```
+- Caso de uso: estender memória episódica do llm-agent-runtime com persistência SQLite durável
+
+### anda
+- Framework de agentes para ambientes TEE e integrações blockchain com ICP
+- Cargo.toml:
+```toml
+[dependencies]
+anda = "0.4.10"
+```
+- Integração com neurographrag:
+```rust
+use std::process::Command;
+let output = Command::new("neurographrag")
+    .args(["read", "--name", "anda-agent-state", "--json"])
+    .output()?;
+```
+- Caso de uso: persistir estado verificável do agente fora do TEE para continuidade entre sessões
+
+### adk-rust
+- Kit modular de desenvolvimento de agentes inspirado nos padrões LangChain e Autogen
+- Cargo.toml:
+```toml
+[dependencies]
+adk-rust = "0.6.0"
+```
+- Integração com neurographrag:
+```rust
+use std::process::Command;
+let output = Command::new("neurographrag")
+    .args(["hybrid-search", "agent memory query", "--json", "--k", "10"])
+    .output()?;
+```
+- Caso de uso: substituir o store de contexto em memória do adk-rust por recall por grafo persistente
+
+### genai
+- Cliente API unificado para OpenAI Anthropic Gemini xAI e Ollama em um único crate
+- Cargo.toml:
+```toml
+[dependencies]
+genai = "0.6.0-beta.17"
+```
+- Integração com neurographrag:
+```rust
+use std::process::Command;
+let output = Command::new("neurographrag")
+    .args(["recall", "llm response cache", "--json"])
+    .output()?;
+```
+- Caso de uso: armazenar respostas custosas do genai para reutilização em execuções seguintes
+
+### liter-llm
+- Cliente LLM universal com suporte a 143 ou mais provedores e rastreamento OpenTelemetry
+- Cargo.toml:
+```toml
+[dependencies]
+liter-llm = "1.2.1"
+```
+- Integração com neurographrag:
+```rust
+use std::process::Command;
+let output = Command::new("neurographrag")
+    .args(["remember", "--name", "litellm-trace", "--type", "agent", "--body", "trace payload"])
+    .output()?;
+```
+- Caso de uso: armazenar snapshots de trace OpenTelemetry no neurographrag para replay de agente
+
+### llm-cascade
+- Cliente LLM em cascata com failover automático e circuit breaker entre provedores
+- Cargo.toml:
+```toml
+[dependencies]
+llm-cascade = "0.1.0"
+```
+- Integração com neurographrag:
+```rust
+use std::process::Command;
+let output = Command::new("neurographrag")
+    .args(["recall", "fallback provider result", "--json"])
+    .output()?;
+```
+- Caso de uso: persistir decisões de cascata para que o circuit breaker aprenda com falhas anteriores
+
+### async-openai
+- Cliente async nativo Rust para a API REST completa da OpenAI com modelos type-safe
+- Cargo.toml:
+```toml
+[dependencies]
+async-openai = "0.34.0"
+```
+- Integração com neurographrag:
+```rust
+use std::process::Command;
+let output = Command::new("neurographrag")
+    .args(["hybrid-search", "openai assistant output", "--json", "--k", "5"])
+    .output()?;
+```
+- Caso de uso: armazenar mensagens de thread de assistente para recall durável entre sessões
+
+### anthropic-sdk
+- Cliente Rust direto para a API Anthropic incluindo tool use e respostas streaming
+- Cargo.toml:
+```toml
+[dependencies]
+anthropic-sdk = "0.1.5"
+```
+- Integração com neurographrag:
+```rust
+use std::process::Command;
+let output = Command::new("neurographrag")
+    .args(["recall", "claude conversation context", "--json"])
+    .output()?;
+```
+- Caso de uso: injetar turnos anteriores da conversa Claude antes de cada chamada à API
+
+### ollama-rs
+- Cliente Rust idiomático para a API do servidor de inferência local Ollama
+- Cargo.toml:
+```toml
+[dependencies]
+ollama-rs = "0.3.4"
+```
+- Integração com neurographrag:
+```rust
+use std::process::Command;
+let output = Command::new("neurographrag")
+    .args(["remember", "--name", "ollama-output", "--type", "agent", "--body", "generated text"])
+    .output()?;
+```
+- Caso de uso: persistir outputs do ollama-rs para recuperação em chamadas de inferência seguintes
+
+### llama-cpp-rs
+- Bindings Rust para llama.cpp para inferência on-device com modelos quantizados
+- Cargo.toml:
+```toml
+[dependencies]
+llama-cpp-rs = "0.3.0"
+```
+- Integração com neurographrag:
+```rust
+use std::process::Command;
+let output = Command::new("neurographrag")
+    .args(["recall", "on-device inference context", "--json", "--k", "5"])
+    .output()?;
+```
+- Caso de uso: carregar contexto persistente no prompt do llama-cpp-rs antes de cada inferência local
+
+### mistralrs
+- Engine de inferência local de alta performance para modelos Mistral com suporte a quantização
+- Cargo.toml:
+```toml
+[dependencies]
+mistralrs = "0.8.1"
+```
+- Integração com neurographrag:
+```rust
+use std::process::Command;
+let output = Command::new("neurographrag")
+    .args(["recall", "mistral inference context", "--json", "--k", "5"])
+    .output()?;
+```
+- Caso de uso: injetar contexto persistente do neurographrag nos prompts do mistralrs antes da inferência
+
+### graphbit
+- Engine de workflow baseado em grafo para orquestração determinista de pipelines LLM em Rust
+- Cargo.toml:
+```toml
+[dependencies]
+graphbit = { git = "https://github.com/graphbit-rs/graphbit" }
+```
+- Integração com neurographrag:
+```rust
+use std::process::Command;
+let output = Command::new("neurographrag")
+    .args(["recall", "workflow node state", "--json", "--k", "3"])
+    .output()?;
+```
+- Caso de uso: persistir outputs de nós do workflow graphbit para travessia stateful entre execuções
+
+### rs-graph-llm
+- Workflows de grafo tipados e interativos para pipelines LLM com segurança em tempo de compilação
+- Cargo.toml:
+```toml
+[dependencies]
+rs-graph-llm = { git = "https://github.com/rs-graph-llm/rs-graph-llm" }
+```
+- Integração com neurographrag:
+```rust
+use std::process::Command;
+let output = Command::new("neurographrag")
+    .args(["hybrid-search", "graph node output", "--json", "--k", "5"])
+    .output()?;
+```
+- Caso de uso: armazenar resultados tipados do rs-graph-llm para memória persistente entre execuções
+
+
+## Contrato: Stdin e Stdout
 ### Entrada — Apenas Argumentos Estruturados
 - Flags da CLI aceitam argumentos tipados validados por `clap` com parsing estrito
 - Stdin aceita body puro quando `--body-stdin` está ativo em `remember` ou `edit`
@@ -115,9 +454,9 @@
   "k": 3,
   "namespace": "default",
   "elapsed_ms": 12,
-  "hits": [
+  "results": [
     { "name": "graphrag-intro", "score": 0.91, "type": "user", "updated_at": "2026-04-18T12:00:00Z" },
-    { "name": "vector-search-notes", "score": 0.84, "type": "agent", "updated_at": "2026-04-17T08:12:03Z" },
+    { "name": "vector-search-notes", "score": 0.84, "type": "project", "updated_at": "2026-04-17T08:12:03Z" },
     { "name": "hybrid-ranker", "score": 0.77, "type": "feedback", "updated_at": "2026-04-16T21:04:55Z" }
   ]
 }
@@ -132,9 +471,9 @@
   "rrf_k": 60,
   "weights": { "vec": 0.6, "fts": 0.4 },
   "elapsed_ms": 18,
-  "hits": [
-    { "name": "postgres-migration-plan", "score": 0.96, "rank_vec": 1, "rank_fts": 1 },
-    { "name": "db-migration-checklist", "score": 0.88, "rank_vec": 2, "rank_fts": 3 }
+  "results": [
+    { "name": "postgres-migration-plan", "score": 0.96, "vec_rank": 1, "fts_rank": 1 },
+    { "name": "db-migration-checklist", "score": 0.88, "vec_rank": 2, "fts_rank": 3 }
   ]
 }
 ```

@@ -1,7 +1,7 @@
 # AGENT_PROTOCOL
 
 
-## Rule Zero — Inviolable Law
+## Rule Zero: Inviolable Law
 - This document is SUPREME LAW for AI agents working in neurographrag.
 - You MUST re-read this document BEFORE every action.
 - You MUST cite the applicable rule BEFORE acting on it.
@@ -43,6 +43,12 @@
 - Augment Code consumes this protocol through IDE integration.
 - JetBrains AI Assistant consumes this protocol through IDE terminal.
 - OpenRouter consumes this protocol as multi-LLM router backend.
+- Minimax consumes this protocol as subprocess memory layer.
+- Z.ai consumes this protocol as subprocess memory layer.
+- Ollama consumes this protocol as subprocess memory layer.
+- Hermes Agent consumes this protocol as subprocess memory layer.
+- LangChain consumes this protocol through custom retriever subprocess tool.
+- LangGraph consumes this protocol through graph node subprocess invocation.
 
 
 ## Scope and Non-Scope

@@ -5,6 +5,7 @@
 //! `AppError::exit_code`, which the binary propagates to the shell on
 //! failure. See the README for the full exit code contract.
 
+use crate::i18n::{current, Language};
 use thiserror::Error;
 
 /// Unified error type for all CLI and library operations.
@@ -130,6 +131,56 @@ impl AppError {
             Self::LockBusy(_) => crate::constants::CLI_LOCK_EXIT_CODE,
             Self::AllSlotsFull { .. } => crate::constants::CLI_LOCK_EXIT_CODE,
             Self::LowMemory { .. } => crate::constants::LOW_MEMORY_EXIT_CODE,
+        }
+    }
+
+    /// Retorna a mensagem de erro localizada no idioma ativo (`--lang` / `NEUROGRAPHRAG_LANG`).
+    ///
+    /// Em inglês, o texto é idêntico ao `Display` gerado por thiserror.
+    /// Em português, os prefixos e mensagens são traduzidos para PT-BR.
+    pub fn localized_message(&self) -> String {
+        self.localized_message_for(current())
+    }
+
+    /// Retorna a mensagem localizada para o idioma explicitamente fornecido.
+    /// Útil em testes que não podem depender do `OnceLock` global.
+    pub fn localized_message_for(&self, lang: Language) -> String {
+        match lang {
+            Language::English => self.to_string(),
+            Language::Portugues => self.to_string_pt(),
+        }
+    }
+
+    fn to_string_pt(&self) -> String {
+        match self {
+            Self::Validation(msg) => format!("erro de validação: {msg}"),
+            Self::Duplicate(msg) => format!("duplicata detectada: {msg}"),
+            Self::Conflict(msg) => format!("conflito: {msg}"),
+            Self::NotFound(msg) => format!("não encontrado: {msg}"),
+            Self::NamespaceError(msg) => format!("namespace não resolvido: {msg}"),
+            Self::LimitExceeded(msg) => format!("limite excedido: {msg}"),
+            Self::Database(e) => format!("erro de banco de dados: {e}"),
+            Self::Embedding(msg) => format!("erro de embedding: {msg}"),
+            Self::VecExtension(msg) => format!("extensão sqlite-vec falhou: {msg}"),
+            Self::DbBusy(msg) => format!("banco ocupado: {msg}"),
+            Self::BatchPartialFailure { total, failed } => {
+                format!("falha parcial em batch: {failed} de {total} itens falharam")
+            }
+            Self::Io(e) => format!("erro de I/O: {e}"),
+            Self::Internal(e) => format!("erro interno: {e}"),
+            Self::Json(e) => format!("erro de JSON: {e}"),
+            Self::LockBusy(msg) => format!("lock ocupado: {msg}"),
+            Self::AllSlotsFull { max, waited_secs } => format!(
+                "todos os {max} slots de concorrência ocupados após aguardar {waited_secs}s \
+                 (exit 75); use --max-concurrency ou aguarde outras invocações terminarem"
+            ),
+            Self::LowMemory {
+                available_mb,
+                required_mb,
+            } => format!(
+                "memória disponível ({available_mb}MB) abaixo do mínimo requerido ({required_mb}MB) \
+                 para carregar o modelo; aborte outras cargas ou use --skip-memory-guard (exit 77)"
+            ),
         }
     }
 }
@@ -310,6 +361,132 @@ mod testes {
         assert_eq!(
             AppError::LockBusy("test".into()).exit_code(),
             crate::constants::CLI_LOCK_EXIT_CODE
+        );
+    }
+
+    #[test]
+    fn localized_message_en_igual_to_string() {
+        let err = AppError::NotFound("mem-x".into());
+        assert_eq!(
+            err.localized_message_for(crate::i18n::Language::English),
+            err.to_string()
+        );
+    }
+
+    #[test]
+    fn localized_message_pt_not_found_em_portugues() {
+        let err = AppError::NotFound("mem-x".into());
+        let msg = err.localized_message_for(crate::i18n::Language::Portugues);
+        assert!(msg.contains("não encontrado"), "esperado PT, obtido: {msg}");
+        assert!(msg.contains("mem-x"));
+    }
+
+    #[test]
+    fn localized_message_pt_validation_em_portugues() {
+        let err = AppError::Validation("campo x".into());
+        let msg = err.localized_message_for(crate::i18n::Language::Portugues);
+        assert!(
+            msg.contains("erro de validação"),
+            "esperado PT, obtido: {msg}"
+        );
+    }
+
+    #[test]
+    fn localized_message_pt_duplicate_em_portugues() {
+        let err = AppError::Duplicate("ns/mem".into());
+        let msg = err.localized_message_for(crate::i18n::Language::Portugues);
+        assert!(
+            msg.contains("duplicata detectada"),
+            "esperado PT, obtido: {msg}"
+        );
+    }
+
+    #[test]
+    fn localized_message_pt_conflict_em_portugues() {
+        let err = AppError::Conflict("ts mudou".into());
+        let msg = err.localized_message_for(crate::i18n::Language::Portugues);
+        assert!(msg.contains("conflito"), "esperado PT, obtido: {msg}");
+    }
+
+    #[test]
+    fn localized_message_pt_namespace_em_portugues() {
+        let err = AppError::NamespaceError("sem marcador".into());
+        let msg = err.localized_message_for(crate::i18n::Language::Portugues);
+        assert!(
+            msg.contains("namespace não resolvido"),
+            "esperado PT, obtido: {msg}"
+        );
+    }
+
+    #[test]
+    fn localized_message_pt_limit_exceeded_em_portugues() {
+        let err = AppError::LimitExceeded("corpo enorme".into());
+        let msg = err.localized_message_for(crate::i18n::Language::Portugues);
+        assert!(
+            msg.contains("limite excedido"),
+            "esperado PT, obtido: {msg}"
+        );
+    }
+
+    #[test]
+    fn localized_message_pt_embedding_em_portugues() {
+        let err = AppError::Embedding("dim errada".into());
+        let msg = err.localized_message_for(crate::i18n::Language::Portugues);
+        assert!(
+            msg.contains("erro de embedding"),
+            "esperado PT, obtido: {msg}"
+        );
+    }
+
+    #[test]
+    fn localized_message_pt_db_busy_em_portugues() {
+        let err = AppError::DbBusy("retries esgotados".into());
+        let msg = err.localized_message_for(crate::i18n::Language::Portugues);
+        assert!(msg.contains("banco ocupado"), "esperado PT, obtido: {msg}");
+    }
+
+    #[test]
+    fn localized_message_pt_batch_partial_failure_em_portugues() {
+        let err = AppError::BatchPartialFailure {
+            total: 10,
+            failed: 3,
+        };
+        let msg = err.localized_message_for(crate::i18n::Language::Portugues);
+        assert!(msg.contains("falha parcial"), "esperado PT, obtido: {msg}");
+        assert!(msg.contains("3"));
+        assert!(msg.contains("10"));
+    }
+
+    #[test]
+    fn localized_message_pt_lock_busy_em_portugues() {
+        let err = AppError::LockBusy("pid 42".into());
+        let msg = err.localized_message_for(crate::i18n::Language::Portugues);
+        assert!(msg.contains("lock ocupado"), "esperado PT, obtido: {msg}");
+    }
+
+    #[test]
+    fn localized_message_pt_all_slots_full_em_portugues() {
+        let err = AppError::AllSlotsFull {
+            max: 4,
+            waited_secs: 60,
+        };
+        let msg = err.localized_message_for(crate::i18n::Language::Portugues);
+        assert!(
+            msg.contains("slots de concorrência"),
+            "esperado PT, obtido: {msg}"
+        );
+    }
+
+    #[test]
+    fn localized_message_pt_low_memory_em_portugues() {
+        let err = AppError::LowMemory {
+            available_mb: 100,
+            required_mb: 500,
+        };
+        let msg = err.localized_message_for(crate::i18n::Language::Portugues);
+        assert!(
+            msg.contains("memória disponível"),
+            "esperado PT, obtido: {msg}"
         );
     }
 }

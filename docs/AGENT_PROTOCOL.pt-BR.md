@@ -1,7 +1,7 @@
 # AGENT_PROTOCOL
 
 
-## Regra Zero — Lei Inviolável
+## Regra Zero: Lei Inviolável
 - Este documento é LEI SUPREMA para agentes de IA trabalhando em neurographrag.
 - Você DEVE reler este documento ANTES de CADA ação.
 - Você DEVE citar a regra aplicável ANTES de agir sobre ela.

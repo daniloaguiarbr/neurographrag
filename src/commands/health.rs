@@ -3,6 +3,7 @@ use crate::output;
 use crate::paths::AppPaths;
 use crate::storage::connection::open_ro;
 use serde::Serialize;
+use std::fs;
 
 #[derive(clap::Args)]
 pub struct HealthArgs {
@@ -32,6 +33,10 @@ struct HealthResponse {
     /// Lista de entidades referenciadas por memórias mas ausentes na tabela de entidades.
     /// Vazio em DB saudável. Conforme contrato documentado em AGENT_PROTOCOL.md.
     missing_entities: Vec<String>,
+    /// Tamanho do WAL file em MB (0.0 se WAL não existe ou journal_mode != wal).
+    wal_size_mb: f64,
+    /// Modo de journaling do SQLite (wal, delete, truncate, persist, memory, off).
+    journal_mode: String,
 }
 
 pub fn run(args: HealthArgs) -> Result<(), AppError> {
@@ -85,6 +90,14 @@ pub fn run(args: HealthArgs) -> Result<(), AppError> {
         missing_entities.push(format!("entity_id={id}"));
     }
 
+    let journal_mode: String = conn
+        .query_row("PRAGMA journal_mode", [], |row| row.get::<_, String>(0))
+        .unwrap_or_else(|_| "unknown".to_string());
+
+    let wal_size_mb = fs::metadata(format!("{}-wal", paths.db.display()))
+        .map(|m| m.len() as f64 / 1024.0 / 1024.0)
+        .unwrap_or(0.0);
+
     output::emit_json(&HealthResponse {
         status: status.to_string(),
         integrity,
@@ -97,6 +110,8 @@ pub fn run(args: HealthArgs) -> Result<(), AppError> {
         db_path: paths.db.display().to_string(),
         schema_version,
         missing_entities,
+        wal_size_mb,
+        journal_mode,
     })?;
 
     Ok(())

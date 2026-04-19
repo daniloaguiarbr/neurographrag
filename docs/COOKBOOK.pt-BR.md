@@ -6,6 +6,20 @@
 - Leia a versão em inglês em [COOKBOOK.md](COOKBOOK.md)
 
 
+## Nota de Latência
+- O CLI é stateless: cada invocação carrega o modelo de embeddings (aproximadamente 1 segundo)
+- Para fluxos de produção que exigem latência abaixo de 50 ms, use o modo daemon (previsto para v3.0.0)
+- O `recall` single-shot atual leva aproximadamente 1 segundo em hardware moderno
+- Pipelines em lote amortizam esse custo invocando o binário uma vez por documento em paralelo
+
+
+## Referência de Valores Padrão
+- `recall --k` padrão é 10 (não 5) — ajuste conforme o tradeoff precisão-revocação
+- `list --limit` padrão é 50 — use `--limit 10000` para exportações completas antes de backup
+- `hybrid-search --weight-vec` e `--weight-fts` ambos têm padrão 1.0
+- `purge --retention-days` padrão é 90 — reduza para políticas de limpeza mais agressivas
+
+
 ## Como Bootstrapar O Banco De Memória Em 60 Segundos
 ### Problem
 - Seu laptop novo não tem banco de memória e seu agente perde contexto o tempo todo
@@ -91,7 +105,7 @@ neurographrag hybrid-search "postgres migration deadlock" \
 - `--rrf-k 60` é a constante de suavização Reciprocal Rank Fusion recomendada na literatura
 - `--weight-vec 0.6` pende o recall em direção à similaridade semântica com maior fidelidade
 - `--weight-fts 0.4` mantém matches exatos de palavra visíveis nos ranks fundidos do topo
-- JSON emite `rank_vec` e `rank_fts` por hit para agentes downstream auditarem a fusão
+- JSON emite `vec_rank` e `fts_rank` por resultado para agentes downstream auditarem a fusão
 - Poupa 50 por cento dos tokens contra pedir a um LLM para re-rankear após vetor puro
 
 
@@ -150,7 +164,7 @@ printf 'Relevant memories:\n%s\n' "$CONTEXT"
 # .claude/hooks/post-task.sh
 neurographrag remember \
   --name "session-$(date +%s)" \
-  --type agent \
+  --type project \
   --description "decision log" \
   --body "$ASSISTANT_RESPONSE"
 ```
@@ -185,7 +199,7 @@ neurographrag remember \
 <!-- AGENTS.md na raiz do repo -->
 ## Memory Layer
 - Use `neurographrag recall "<query>" --k 5 --json` to fetch prior decisions
-- Use `neurographrag remember --name "<kebab-name>" --type agent --body "<text>"` to persist output
+- Use `neurographrag remember --name "<kebab-name>" --type project --description "<sumário>" --body "<text>"` to persist output
 - Prefer `hybrid-search` when the query mixes keywords and natural language
 - Respect exit code 75 as retry-later rather than error
 ```
@@ -322,14 +336,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: cargo install --locked neurographrag
-      - run: neurographrag purge --days 30 --yes
+      - run: neurographrag purge --retention-days 30 --yes
       - run: neurographrag vacuum --json
       - run: neurographrag optimize --json
 ```
 
 
 ### Explanation
-- `purge --days 30` apaga definitivamente linhas soft-deletadas mais antigas que a janela
+- `purge --retention-days 30` apaga definitivamente linhas soft-deletadas mais antigas que a janela
 - `vacuum` reclama páginas da freelist e faz checkpoint do WAL para o arquivo principal
 - `optimize` refresca estatísticas do planner para recall mais rápido na próxima execução
 - Cron semanal às 03:00 de domingo evita contenção com horário comercial de agentes
@@ -504,3 +518,298 @@ hyperfine --warmup 3 \
 ### See Also
 - Receita "Como Combinar Busca Vetorial E FTS Com Pesos Ajustáveis"
 - Receita "Como Orquestrar Recall Paralelo Entre Namespaces"
+
+
+## Como Integrar Com rig-core Para Memória De Agente
+### Problem
+- Seu agente `rig-core` perde contexto entre invocações sem armazenamento persistente
+- Reconstruir embeddings a cada execução desperdiça 50 minutos de compute e budget de API por semana
+
+### Solution
+```rust
+use std::process::Command;
+use serde_json::Value;
+
+fn lembrar_contexto_agente(namespace: &str, conteudo: &str) -> anyhow::Result<()> {
+    let status = Command::new("neurographrag")
+        .args(["remember", "--namespace", namespace, conteudo])
+        .status()?;
+    anyhow::ensure!(status.success(), "neurographrag remember falhou");
+    Ok(())
+}
+
+fn recuperar_contexto_agente(namespace: &str, consulta: &str, k: u8) -> anyhow::Result<Vec<String>> {
+    let output = Command::new("neurographrag")
+        .args(["recall", "--namespace", namespace, "--k", &k.to_string(), "--json", consulta])
+        .output()?;
+    anyhow::ensure!(output.status.success(), "neurographrag recall falhou");
+    let parsed: Value = serde_json::from_slice(&output.stdout)?;
+    let itens = parsed["items"]
+        .as_array()
+        .unwrap_or(&vec![])
+        .iter()
+        .filter_map(|v| v["body"].as_str().map(str::to_owned))
+        .collect();
+    Ok(itens)
+}
+```
+
+### Explanation
+- `Command::new("neurographrag")` executa o binário de 25 MB sem custo de FFI
+- `--namespace` isola a memória do agente rig prevenindo contaminação entre agentes
+- `--json` retorna saída estruturada que `serde_json` parseia sem regex frágil
+- `anyhow::ensure!` converte falhas de exit-code em erros tipados que o agente trata
+- Reduz 50 minutos de reconstrução de contexto por execução para uma chamada CLI de 5 milissegundos
+
+### Variants
+- Substitua `Command` por `tokio::process::Command` para pipelines async sem bloqueio
+- Envolva as duas funções em um struct `RigMemoryAdapter` que implementa um trait `MemoryStore`
+
+### See Also
+- Receita "Como Inicializar Banco De Dados De Memória Em 60 Segundos"
+- Receita "Como Executar Ollama Offline Com ollama-rs E Memória Persistente"
+
+
+## Como Integrar Com swarms-rs Para Memória Multi-Agente
+### Problem
+- Seu swarm de agentes sobrescreve memórias uns dos outros ao compartilhar um namespace
+- Depurar qual agente escreveu o quê leva horas de grep em arquivos de log não estruturados
+
+### Solution
+```rust
+use std::process::Command;
+
+fn swarm_lembrar(agent_id: &str, conteudo: &str) -> anyhow::Result<()> {
+    let namespace = format!("swarm-{agent_id}");
+    let status = Command::new("neurographrag")
+        .args(["remember", "--namespace", &namespace, conteudo])
+        .status()?;
+    anyhow::ensure!(status.success(), "swarm remember falhou para agent {agent_id}");
+    Ok(())
+}
+
+fn swarm_recuperar_todos(agent_ids: &[&str], consulta: &str) -> anyhow::Result<Vec<(String, String)>> {
+    let mut resultados = Vec::new();
+    for agent_id in agent_ids {
+        let namespace = format!("swarm-{agent_id}");
+        let output = Command::new("neurographrag")
+            .args(["recall", "--namespace", &namespace, "--k", "5", "--json", consulta])
+            .output()?;
+        if output.status.success() {
+            let parsed: serde_json::Value = serde_json::from_slice(&output.stdout)?;
+            if let Some(itens) = parsed["items"].as_array() {
+                for item in itens {
+                    if let Some(body) = item["body"].as_str() {
+                        resultados.push((agent_id.to_string(), body.to_owned()));
+                    }
+                }
+            }
+        }
+    }
+    Ok(resultados)
+}
+```
+
+### Explanation
+- Namespace por agente `swarm-{agent_id}` isola memórias sem alterações de schema
+- Um único arquivo SQLite hospeda todos os namespaces eliminando múltiplos bancos
+- Iterar namespaces no coordenador coleta resultados ranqueados de cada membro do swarm
+- Saída JSON estruturada com `serde_json` torna atribuição trivial versus logs de texto puro
+- Reduz tempo de depuração multi-agente de horas para minutos tornando autoria explícita
+
+### Variants
+- Use `tokio::task::JoinSet` para recuperar todos os namespaces concorrentemente em swarms async
+- Adicione um namespace `coordinator` onde o orquestrador grava decisões sintetizadas do swarm
+
+### See Also
+- Receita "Como Orquestrar Recall Paralelo Entre Namespaces"
+- Receita "Como Integrar Com rig-core Para Memória De Agente"
+
+
+## Como Usar genai Com neurographrag Para Memória Universal De LLM
+### Problem
+- Trocar provedores de LLM via `genai` reseta a memória do agente porque embeddings diferem por vendor
+- Seu time perde 40 minutos por migração de provedor reconstruindo índices de busca semântica
+
+### Solution
+```rust
+use std::process::Command;
+
+async fn armazenar_turno_llm(
+    namespace: &str,
+    role: &str,
+    conteudo: &str,
+) -> anyhow::Result<()> {
+    let entrada = format!("[{role}] {conteudo}");
+    let status = Command::new("neurographrag")
+        .args(["remember", "--namespace", namespace, &entrada])
+        .status()?;
+    anyhow::ensure!(status.success(), "falhou ao persistir turno LLM");
+    Ok(())
+}
+
+async fn recuperar_contexto_relevante(
+    namespace: &str,
+    consulta_usuario: &str,
+    k: u8,
+) -> anyhow::Result<String> {
+    let output = Command::new("neurographrag")
+        .args([
+            "hybrid-search",
+            "--namespace", namespace,
+            "--k", &k.to_string(),
+            "--json",
+            consulta_usuario,
+        ])
+        .output()?;
+    anyhow::ensure!(output.status.success(), "hybrid-search falhou");
+    let parsed: serde_json::Value = serde_json::from_slice(&output.stdout)?;
+    let contexto = parsed["items"]
+        .as_array()
+        .unwrap_or(&vec![])
+        .iter()
+        .filter_map(|v| v["body"].as_str())
+        .collect::<Vec<_>>()
+        .join("\n---\n");
+    Ok(contexto)
+}
+```
+
+### Explanation
+- neurographrag armazena embeddings usando `multilingual-e5-small` independente do provedor LLM
+- Trocar de OpenAI para Mistral via `genai` não invalida entradas de memória existentes
+- `hybrid-search` combina similaridade vetorial e FTS dando contexto mais rico que vetor puro
+- Formatar turnos como `[role] conteudo` preserva estrutura de conversa no body da memória
+- Elimina 40 minutos de reconstrução de índice por migração com uma camada agnóstica a provedor
+
+### Variants
+- Injete contexto recuperado como system message antes de cada request `genai::chat` automaticamente
+- Armazene nome do modelo e temperatura junto ao body do turno para auditar qual modelo gerou cada resposta
+
+### See Also
+- Receita "Como Combinar Busca Vetorial E FTS Com Pesos Ajustáveis"
+- Receita "Como Cascatear Com llm-cascade E Fallback De Memória"
+
+
+## Como Cascatear Com llm-cascade E Fallback De Memória
+### Problem
+- Seu pipeline LLM em cascata perde tentativas anteriores quando um provedor falha e reexecuta
+- Rederetear chamadas falhas sem contexto faz o modelo de fallback repetir erros custosos
+
+### Solution
+```rust
+use std::process::Command;
+
+fn persistir_tentativa_cascade(
+    namespace: &str,
+    provider: &str,
+    prompt: &str,
+    resultado: &str,
+    sucesso: bool,
+) -> anyhow::Result<()> {
+    let rotulo = if sucesso { "SUCCESS" } else { "FAILURE" };
+    let entrada = format!("[CASCADE:{rotulo}:{provider}] prompt={prompt} resultado={resultado}");
+    let status = Command::new("neurographrag")
+        .args(["remember", "--namespace", namespace, &entrada])
+        .status()?;
+    anyhow::ensure!(status.success(), "falhou ao persistir tentativa cascade");
+    Ok(())
+}
+
+fn carregar_historico_cascade(namespace: &str, prompt: &str) -> anyhow::Result<String> {
+    let output = Command::new("neurographrag")
+        .args([
+            "recall",
+            "--namespace", namespace,
+            "--k", "10",
+            "--json",
+            prompt,
+        ])
+        .output()?;
+    anyhow::ensure!(output.status.success(), "recall falhou para histórico cascade");
+    let parsed: serde_json::Value = serde_json::from_slice(&output.stdout)?;
+    let historico = parsed["items"]
+        .as_array()
+        .unwrap_or(&vec![])
+        .iter()
+        .filter_map(|v| v["body"].as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    Ok(historico)
+}
+```
+
+### Explanation
+- Rotular entradas com `CASCADE:SUCCESS:provider` permite ao fallback pular provedores já falhos
+- Recuperar histórico antes de cada tentativa revela quais modelos já tentaram o mesmo prompt
+- Um namespace por execução de pipeline garante isolamento sem gerenciar múltiplos bancos
+- Rótulos estruturados parseiam com `str::contains` simples evitando overhead JSON na consulta
+- Economiza falhas repetidas custosas dando ao fallback consciência plena do estado cascade anterior
+
+### Variants
+- Crie um struct `CascadeMemory` que chama `persistir` e `carregar` automaticamente em cada tentativa
+- Filtre entradas `FAILURE` na seleção de fallback para pular provedores comprovadamente falhos
+
+### See Also
+- Receita "Como Usar genai Com neurographrag Para Memória Universal De LLM"
+- Receita "Como Integrar Com rig-core Para Memória De Agente"
+
+
+## Como Executar Ollama Offline Com ollama-rs E Memória Persistente
+### Problem
+- Seu agente `ollama-rs` offline perde todo o contexto de conversa quando o processo reinicia
+- Ambientes air-gapped não podem usar vector stores em nuvem então cada sessão começa do zero
+
+### Solution
+```rust
+use std::process::Command;
+
+fn lembrar_offline(conteudo: &str) -> anyhow::Result<()> {
+    let status = Command::new("neurographrag")
+        .args(["remember", "--namespace", "ollama-local", conteudo])
+        .status()?;
+    anyhow::ensure!(status.success(), "lembrar offline falhou: exit code não zero");
+    Ok(())
+}
+
+fn recuperar_offline(consulta: &str, k: u8) -> anyhow::Result<Vec<String>> {
+    let output = Command::new("neurographrag")
+        .args([
+            "recall",
+            "--namespace", "ollama-local",
+            "--k", &k.to_string(),
+            "--json",
+            consulta,
+        ])
+        .output()?;
+    anyhow::ensure!(output.status.success(), "recuperar offline falhou");
+    let parsed: serde_json::Value = serde_json::from_slice(&output.stdout)?;
+    let itens = parsed["items"]
+        .as_array()
+        .unwrap_or(&vec![])
+        .iter()
+        .filter_map(|v| v["body"].as_str().map(str::to_owned))
+        .collect();
+    Ok(itens)
+}
+
+fn construir_prompt_com_contexto(consulta: &str, memorias: &[String]) -> String {
+    let contexto = memorias.join("\n---\n");
+    format!("Contexto relevante da memória:\n{contexto}\n\nConsulta do usuário: {consulta}")
+}
+```
+
+### Explanation
+- neurographrag embarca o modelo ONNX `multilingual-e5-small` então zero chamadas de rede ocorrem
+- O binário de 25 MB grava em um arquivo SQLite local que sobrevive a reinicializações do processo
+- `--namespace ollama-local` mantém memórias offline isoladas de namespaces de agentes em rede
+- `construir_prompt_com_contexto` injeta memórias recuperadas no prompt Ollama antes de cada inferência
+- Entrega memória vetorial persistente em ambientes totalmente air-gapped sem dependências de nuvem
+
+### Variants
+- Encadeie `recuperar_offline` com `neurographrag link` para construir grafo de conhecimento das saídas Ollama
+- Chame `neurographrag vacuum` periodicamente para recuperar espaço SQLite conforme o banco offline cresce
+
+### See Also
+- Receita "Como Inicializar Banco De Dados De Memória Em 60 Segundos"
+- Receita "Como Integrar Com rig-core Para Memória De Agente"

@@ -4,6 +4,7 @@
 > 21 agentes e 20+ plataformas em um único contrato de CLI
 
 - Leia a versão em inglês em [INTEGRATIONS.md](INTEGRATIONS.md)
+- Cada receita abaixo está pronta para copiar e custa zero para executar
 
 
 ## Tabela Resumo
@@ -32,6 +33,7 @@
 | JetBrains AI Assistant | Agente IA | 2024.2+ | `neurographrag recall "stacktrace" --json` | https://www.jetbrains.com/ai |
 | OpenRouter | Roteador IA | qualquer | `neurographrag recall "regra" --json` | https://openrouter.ai/docs |
 | Shells POSIX | Shell | qualquer | `neurographrag recall "$query" --json` | https://www.gnu.org/software/bash |
+| Nushell | Shell | 0.90+ | `^neurographrag recall "query" --k 5 --json \| from json \| get results` | https://www.nushell.sh/book |
 | GitHub Actions | CI/CD | qualquer | workflow YAML | https://docs.github.com/actions |
 | GitLab CI | CI/CD | qualquer | `.gitlab-ci.yml` | https://docs.gitlab.com/ee/ci |
 | CircleCI | CI/CD | qualquer | `.circleci/config.yml` | https://circleci.com/docs |
@@ -45,6 +47,8 @@
 
 ## Claude Code
 ### Agente Anthropic — Integração Subprocess
+- Receita pronta para copiar em `.claude/hooks/`, zero custo, memória permanece na sua máquina
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é persistir contexto entre sessões do Claude Code sem serviços externos de memória
 - Use `neurographrag recall "$USER_PROMPT" --k 5 --json` em um hook pre-task para injetar contexto
 - Versão mínima exige Claude Code 1.0 ou posterior para suporte estável ao diretório `.claude/hooks/`
@@ -54,6 +58,8 @@
 
 ## Codex CLI
 ### Agente OpenAI — Subprocess Dirigido Por AGENTS.md
+- Receita pronta para colar no `AGENTS.md` da raiz do repo, zero custo para ativar
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é expor o contrato de memória via convenção nativa do `AGENTS.md` da própria OpenAI
 - Use `neurographrag recall "<query>" --k 5 --json` documentado dentro do `AGENTS.md` na raiz do repo
 - Versão mínima exige Codex CLI 0.5 ou posterior para regras determinísticas de parsing do AGENTS.md
@@ -63,6 +69,8 @@
 
 ## Gemini CLI
 ### Agente Google — Subprocess Com Contrato JSON
+- Receita pronta para copiar na config do Gemini CLI, zero custo, roda completamente local
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é injetar memória em prompts do Gemini 2.5 Pro durante sessões longas de código
 - Use `neurographrag hybrid-search "query" --k 5 --json` para recall com intenção mista de keyword
 - Versão mínima suporta qualquer release recente do Gemini CLI com invocação subprocess habilitada
@@ -72,6 +80,8 @@
 
 ## Opencode
 ### Agente Comunitário — Integração Subprocess
+- Receita pronta para copiar no hook plugin do Opencode, zero custo, roda como subprocess
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é persistir contexto multi-turno no loop open source de orquestração do Opencode
 - Use `neurographrag recall "$query" --json` como parte do pipeline pre-generation do Opencode
 - Versão mínima suporta qualquer release recente do Opencode expondo hook subprocess via plugin
@@ -81,6 +91,8 @@
 
 ## OpenClaw
 ### Agente Comunitário — Driver Subprocess
+- Receita pronta para adicionar no startup do OpenClaw, zero custo, memória é totalmente local
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é injetar memória persistente em loops do agente OpenClaw sem rebuild de plugin
 - Use `neurographrag list --type user --json` para buscar contexto inicial no começo de uma run
 - Versão mínima suporta qualquer release recente do OpenClaw capaz de shell out para binários CLI
@@ -90,6 +102,8 @@
 
 ## Paperclip
 ### Agente Comunitário — Cliente Subprocess
+- Receita pronta para colar na config de hook do Paperclip, zero custo, memória fica local
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é persistir memória cross-session no agente autônomo de desenvolvimento Paperclip
 - Use `neurographrag read --name onboarding-note --json` para semear a sessão com notas prévias
 - Versão mínima suporta qualquer release recente do Paperclip que possa spawnar subprocess filho
@@ -99,6 +113,8 @@
 
 ## VS Code Copilot
 ### Agente Microsoft — Integração tasks.json
+- Receita pronta para colar no tasks.json, zero custo, recall dispara de dentro do editor
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é expor memória relevante de uma seleção dentro dos painéis de chat do VS Code Copilot
 - Use a entrada de exemplo em tasks.json que chama `neurographrag recall "$selection" --json`
 - Versão mínima exige VS Code 1.90 ou posterior para as substituições mais recentes de tasks.json
@@ -108,6 +124,8 @@
 
 ## Google Antigravity
 ### Agente Google — Integração Runner
+- Receita pronta para registrar como runner Antigravity, zero custo, binário é autocontido
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é rodar neurographrag como runner de primeira classe em pipelines Antigravity em escala
 - Use `neurographrag hybrid-search "$PROMPT" --json --k 10` como passo de retrieval em um runner
 - Versão mínima suporta qualquer release recente do Antigravity que aceite runners binários arbitrários
@@ -117,6 +135,8 @@
 
 ## Windsurf
 ### Agente Codeium — Integração Terminal
+- Receita pronta para colar em um binding Run task do Windsurf, zero custo para ativar recall
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é expor recall de memória para painéis assistentes do Windsurf via invocação de terminal
 - Use `neurographrag recall "$EDITOR_CONTEXT" --json` mapeado para um binding Run task no Windsurf
 - Versão mínima suporta qualquer release recente do Windsurf com execução de task de terminal ativa
@@ -126,6 +146,8 @@
 
 ## Cursor
 ### Agente Cursor — Integração Terminal
+- Receita pronta para adicionar em `.cursorrules` ou binding de terminal, zero custo, memória é local
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é parear Cursor AI com um backend de memória local que sobrevive restarts do editor
 - Use `neurographrag remember --name cursor-ctx --type agent --body "$SELECTION"` por atalho
 - Versão mínima exige Cursor 0.40 ou posterior para regras AI estáveis e override de env de terminal
@@ -135,6 +157,8 @@
 
 ## Zed
 ### Agente Zed Industries — Integração Assistant Panel
+- Receita pronta para adicionar como task profile do Zed, zero custo, roda do terminal integrado
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é cablear recall de memória no painel assistente do Zed sem extensões customizadas
 - Use `neurographrag recall "abas abertas" --json --k 5` como comando de terminal disponível ao Zed
 - Versão mínima suporta qualquer release recente do Zed com painel assistente e tasks de terminal
@@ -144,6 +168,8 @@
 
 ## Aider
 ### Agente Open Source — Integração Shell
+- Receita pronta para colar no alias shell antes do `aider`, zero custo, zero servidor de config
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é aumentar pair programming do Aider com memória durável entre repositórios git
 - Use `neurographrag recall "refactor target" --k 5 --json` invocado antes de cada prompt Aider
 - Versão mínima exige Aider 0.60 ou posterior para invocação subprocess e hook estáveis e suportadas
@@ -153,6 +179,8 @@
 
 ## Jules
 ### Agente Google Labs — Automação CI
+- Receita pronta para adicionar como passo CI do Jules, zero custo, binário instala em segundos
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é rodar manutenção de memória dentro dos pipelines de automação preview do Jules
 - Use `neurographrag stats --json` como passo CI para monitorar crescimento de memória semanal
 - Versão mínima é a release preview corrente do Jules disponível via early access do Google Labs
@@ -162,6 +190,8 @@
 
 ## Kilo Code
 ### Agente Comunitário — Integração Subprocess
+- Receita pronta para colar no hook de startup do Kilo Code, zero custo, memória é arquivo local
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é expor camada de memória persistente ao agente autônomo de engenharia Kilo Code
 - Use `neurographrag recall "tarefas recentes" --json` no começo de toda run do agente Kilo Code
 - Versão mínima suporta qualquer release recente do Kilo Code capaz de spawnar processos filhos
@@ -171,6 +201,8 @@
 
 ## Roo Code
 ### Agente Comunitário — Integração Subprocess
+- Receita pronta para cablear no ciclo de hook do Roo Code, zero custo, dados em SQLite local
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é injetar memória em prompts do agente Roo Code para entendimento profundo do repo
 - Use `neurographrag hybrid-search "contexto repo" --json` para recall entre tipos mistos de query
 - Versão mínima suporta qualquer release recente do Roo Code com capacidade de hook subprocess
@@ -180,6 +212,8 @@
 
 ## Cline
 ### Extensão Comunitária VS Code — Integração Terminal
+- Receita pronta para registrar como tool de terminal do Cline, zero custo, memória persiste local
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é dar ao Cline memória persistente entre sessões VS Code sem serviços em cloud
 - Use `neurographrag list --limit 20 --json` como passo inicial no startup da conversa do Cline
 - Versão mínima suporta a release atual da extensão VS Code do Cline no marketplace
@@ -189,6 +223,8 @@
 
 ## Continue
 ### Agente Open Source — Integração Terminal IDE
+- Receita pronta para colar nos custom commands do Continue, zero custo, sem servidor necessário
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é expor memória neurographrag nos painéis de chat Continue em VS Code ou JetBrains
 - Use `neurographrag recall "docstring" --json` de um registro de custom command do Continue
 - Versão mínima suporta qualquer release recente da extensão Continue em VS Code ou JetBrains
@@ -198,6 +234,8 @@
 
 ## Factory
 ### Agente Factory — API Ou Subprocess
+- Receita pronta para adicionar na config de tool do droid Factory, zero custo, binário autocontido
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é integrar neurographrag com droids autônomos de desenvolvimento Factory em produção
 - Use `neurographrag recall "contexto pr" --json` durante preparação do plano do droid Factory
 - Versão mínima suporta qualquer release recente do Factory com integração subprocess ou API
@@ -207,6 +245,8 @@
 
 ## Augment Code
 ### Agente Augment — Integração IDE
+- Receita pronta para cablear no registro de tool da IDE Augment, zero custo, roda como subprocess
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é alimentar agentes de review Augment Code com memória persistente entre repositórios
 - Use `neurographrag hybrid-search "code review" --json` na preparação de review da IDE Augment
 - Versão mínima suporta qualquer release recente do Augment Code com hooks de terminal e subprocess
@@ -216,6 +256,8 @@
 
 ## JetBrains AI Assistant
 ### Agente JetBrains — Integração IDE
+- Receita pronta para registrar como external tool do JetBrains, zero custo, recall leva milissegundos
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é adicionar memória neurographrag ao JetBrains AI Assistant em IntelliJ PyCharm WebStorm
 - Use `neurographrag recall "$SELECTION" --json` registrado como runner de external tool JetBrains
 - Versão mínima exige JetBrains AI Assistant 2024.2 ou posterior para registro moderno de tool
@@ -225,6 +267,8 @@
 
 ## OpenRouter
 ### Roteador Multi-LLM — Qualquer Versão Suportada
+- Receita pronta para adicionar como preâmbulo de qualquer pipeline OpenRouter, zero custo local
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é compartilhar backend comum de memória entre todo LLM hospedado via OpenRouter
 - Use `neurographrag recall "regra roteamento" --json` como preâmbulo antes de request roteado
 - Versão mínima suporta qualquer release da API OpenRouter já que memória fica local e independente
@@ -233,16 +277,31 @@
 
 
 ## Shells POSIX
-### Bash Zsh Fish PowerShell Nushell — Qualquer Versão
+### Bash Zsh Fish PowerShell — Qualquer Versão
+- Receita pronta para colar em alias ou script de shell, zero custo, pipes funcionam imediatamente
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess sem processo extra
 - Propósito é compor neurographrag com pipelines clássicos Unix e Windows shell sem atrito
 - Use `neurographrag recall "$query" --json | jaq '.hits[].name'` em qualquer shell POSIX
-- Versão mínima suporta qualquer Bash Zsh Fish PowerShell 7 ou Nushell 0.90 recente e posterior
+- Versão mínima suporta qualquer Bash Zsh Fish ou PowerShell 7 recente
 - Docs oficiais em https://www.gnu.org/software/bash e homepages dos respectivos projetos shell
 - Dica de ouro é colocar variáveis entre aspas para evitar word splitting em queries com espaços
 
 
+## Nushell
+### Nushell — Integração Pipeline de Dados Estruturados
+- Receita pronta para colar em script Nushell, zero custo, saída vira tabela Nu nativa
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como subprocess via sigil `^` no Nu
+- Propósito é compor saída do neurographrag com pipelines de dados estruturados do Nushell nativamente
+- Use `^neurographrag recall "query" --k 5 --json | from json | get results` para consultar memória
+- Versão mínima suporta Nushell 0.90 ou posterior para comando externo estável e pipeline `from json`
+- Docs oficiais em https://www.nushell.sh/book descrevendo comandos externos e parsing de JSON
+- Dica de ouro é encadear `| select name score` para exibir tabela de memória ranqueada no Nu
+
+
 ## GitHub Actions
 ### CI/CD — Qualquer Runner Recente
+- Receita pronta para copiar em `.github/workflows/`, zero custo, roda em qualquer runner GitHub
+- Enquanto MCPs exigem servidor dedicado, neurographrag instala em segundos via cargo em qualquer runner
 - Propósito é rodar manutenção de memória e backups em workflows agendados do GitHub Actions
 - Use workflow cron que executa `neurographrag purge --days 30 --yes` e `vacuum` agendados
 - Versão mínima funciona em qualquer runner `ubuntu-latest` `macos-latest` ou `windows-latest`
@@ -252,6 +311,8 @@
 
 ## GitLab CI
 ### CI/CD — Runner Recente
+- Receita pronta para copiar em `.gitlab-ci.yml`, zero custo, roda em qualquer runner GitLab
+- Enquanto MCPs exigem servidor dedicado, neurographrag instala em segundos via cargo em qualquer runner
 - Propósito é rodar manutenção neurographrag em pipelines agendados do GitLab CI rotineiramente
 - Use stage `.gitlab-ci.yml` agendado que invoca `cargo install --locked neurographrag` primeiro
 - Versão mínima suporta runner recente do GitLab com toolchain Rust disponível para instalação
@@ -261,6 +322,8 @@
 
 ## CircleCI
 ### CI/CD — Executor Recente
+- Receita pronta para copiar na config CircleCI, zero custo, binário instala via cargo em segundos
+- Enquanto MCPs exigem servidor dedicado, neurographrag instala em segundos via cargo em qualquer executor
 - Propósito é rodar manutenção e backups neurographrag em workflows agendados do CircleCI
 - Use workflow agendado com `cargo install --locked neurographrag` seguido dos passos do job
 - Versão mínima suporta executor Linux ou macOS recente do CircleCI com toolchain Rust
@@ -270,6 +333,8 @@
 
 ## Jenkins
 ### CI/CD — Jenkins 2.400+
+- Receita pronta para colar em stage de Jenkinsfile, zero custo, funciona em ambientes air-gapped
+- Enquanto MCPs exigem servidor dedicado, neurographrag instala via cargo e roda sem daemons
 - Propósito é integrar backups neurographrag em pipelines Jenkins self-hosted para ambientes regulados
 - Use stage em Jenkinsfile rodando `cargo install --locked neurographrag` e comandos operacionais
 - Versão mínima exige Jenkins 2.400 ou posterior para pipeline declarative e gerência de agent estáveis
@@ -279,6 +344,8 @@
 
 ## Docker e Podman Alpine
 ### Container — Qualquer Versão Recente
+- Receita pronta para copiar em Dockerfile, zero custo, imagem final cabe em menos de 25 MB Alpine
+- Enquanto MCPs exigem servidor dedicado, neurographrag é binário estático sem dependência de runtime
 - Propósito é empacotar neurographrag em imagens Alpine mínimas para deploys reproduzíveis em produção
 - Use Dockerfile multi-stage com stage builder Rust e runtime Alpine copiando o binário único
 - Versão mínima suporta qualquer Docker ou Podman com sintaxe multi-stage compatível ativada
@@ -288,6 +355,8 @@
 
 ## Kubernetes Jobs E CronJobs
 ### Kubernetes — 1.25+
+- Receita pronta para copiar em manifesto CronJob, zero custo, roda no seu cluster existente
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como Job one-shot sem sidecar necessário
 - Propósito é rodar manutenção neurographrag como Kubernetes CronJobs em clusters gerenciados
 - Use manifesto CronJob referenciando a imagem Alpine e invocando purge mais vacuum agendados
 - Versão mínima exige Kubernetes 1.25 ou posterior para Job CronJob e concurrency policy estáveis
@@ -297,6 +366,8 @@
 
 ## Homebrew
 ### Gerenciador Pacote — macOS E Linux
+- Receita pronta para executar assim que a fórmula entrar, zero custo, instala o mesmo binário do cargo
+- Enquanto MCPs exigem servidor dedicado, neurographrag é binário único sem dependência de runtime
 - Propósito é instalar neurographrag em macOS e Linux com o familiar gerenciador Homebrew
 - Use `brew install neurographrag` assim que a fórmula oficial aparecer nos taps Homebrew core
 - Versão mínima suporta qualquer Homebrew 4.0 ou posterior em macOS ou distros Linuxbrew
@@ -306,6 +377,8 @@
 
 ## Scoop E Chocolatey
 ### Gerenciador Pacote — Windows
+- Receita pronta para executar assim que o manifesto entrar, zero custo, instala o mesmo binário do cargo
+- Enquanto MCPs exigem servidor dedicado, neurographrag é único exe sem dependência de runtime
 - Propósito é instalar neurographrag no Windows com Scoop ou Chocolatey familiares aos devs Windows
 - Use `scoop install neurographrag` ou `choco install neurographrag` assim que manifestos oficiais saiam
 - Versão mínima suporta Scoop 0.3 ou Chocolatey 2.0 com recursos modernos de manifesto ativos
@@ -315,6 +388,8 @@
 
 ## Nix E Flakes
 ### Gerenciador Pacote — Qualquer Versão Nix
+- Receita pronta para adicionar como flake input, zero custo, hash do binário fixado para reprodutibilidade
+- Enquanto MCPs exigem servidor dedicado, neurographrag roda como binário puro em qualquer dev shell Nix
 - Propósito é instalar neurographrag em ambientes Nix reproduzíveis incluindo NixOS e dev shells
 - Use `nix run github:daniloaguiarbr/neurographrag#neurographrag` para executar sem instalação prévia
 - Versão mínima exige Nix 2.4 ou posterior com feature Flakes habilitada na config do usuário

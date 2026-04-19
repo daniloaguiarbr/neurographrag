@@ -59,7 +59,7 @@ neurographrag recall "estratégia de autenticação" --k 5 --json
 neurographrag hybrid-search "design jwt" --k 10 --rrf-k 60 --json
 neurographrag read --name design-auth
 neurographrag forget --name design-auth
-neurographrag purge --days 30 --yes
+neurographrag purge --retention-days 30 --yes
 ```
 - `init` inicializa o banco, baixa o modelo e valida a extensão `sqlite-vec`
 - `remember` armazena conteúdo, extrai entidades e gera embeddings atomicamente
@@ -79,7 +79,7 @@ neurographrag hybrid-search "estratégia migração postgres" \
   --weight-vec 0.7 \
   --weight-fts 0.3 \
   --json \
-  | jaq '.hits[] | {name, score, source}'
+  | jaq '.results[] | {name, score, source}'
 ```
 - Combina similaridade vetorial densa e matches textuais esparsos em ranqueamento único
 - Ajuste de pesos permite favorecer proximidade semântica sobre precisão de palavras
@@ -137,7 +137,7 @@ ouch compress ~/Dropbox/neurographrag.sqlite ~/Dropbox/neurographrag-$(date +%Y%
 ```bash
 neurographrag recall "$QUERY_USUARIO" --k 5 --json \
   | jaq -c '{
-      contexto: [.hits[] | {name, body, score}],
+      contexto: [.results[] | {name, body, score}],
       gerado_em: now | todate
     }' \
   | claude --print "Use este contexto para responder: $QUERY_USUARIO"
@@ -147,6 +147,158 @@ neurographrag recall "$QUERY_USUARIO" --k 5 --json \
 - Determinismo dos códigos de saída permite rotear erros sem parsear stderr manualmente
 - Custo de tokens cai setenta por cento comparado ao context stuffing de corpus completo
 - Latência ida e volta fica abaixo de cem milissegundos fim a fim localmente
+
+
+## Configuração e Notas de Namespace
+### Namespace Padrão — GAP 16
+- Namespace padrão é `global` quando `--namespace` é omitido
+- Configure via variável de ambiente `NEUROGRAPHRAG_NAMESPACE` para sobrescrever globalmente
+- Use `namespace-detect` para inspecionar o namespace resolvido antes de operações em massa
+
+### Semântica do Score — GAP 17
+- Saída JSON usa o campo `distance` (distância cosseno, menor valor indica mais relevância)
+- Formatos texto e markdown expõem `score = 1 - distance` (maior valor indica mais relevância)
+- Prefira sempre `--json` em pipelines para obter `distance` bruto com filtragem precisa
+
+### Descoberta do Caminho do Banco — GAP 25
+- Todos os comandos aceitam a flag `--db <PATH>` além da variável `NEUROGRAPHRAG_DB_PATH`
+- Flag CLI tem precedência sobre a variável de ambiente
+- Use `--db` ao operar múltiplos bancos isolados em processos paralelos
+
+### Limite de Concorrência — GAP 27
+- `--max-concurrency` é limitado a `2×nCPUs`; valores maiores retornam exit 2
+- Exit code 2 sinaliza argumento inválido; reduza o valor e repita a invocação
+- Padrão de 4 slots é ótimo para a maioria dos laptops com dois a quatro núcleos
+
+
+## Referência — Subcomandos Não Cobertos no Início Rápido
+### Usando cleanup-orphans
+- Remove entidades sem memórias vinculadas e sem relacionamentos no grafo
+- Execute periodicamente após operações `forget` em massa para manter a tabela de entidades enxuta
+```bash
+neurographrag cleanup-orphans --dry-run
+neurographrag cleanup-orphans --yes
+```
+- Pré-requisitos: nenhum — funciona em qualquer banco inicializado
+- `--dry-run` exibe a contagem de entidades órfãs sem remover nada
+- `--yes` suprime a confirmação interativa para pipelines automatizados
+- Exit code 0: limpeza concluída (ou nada a limpar)
+- Exit code 75: slot exaurido, repita após breve backoff
+
+### Usando edit
+- Altera o corpo ou a descrição de uma memória existente criando nova versão imutável
+- Use `--expected-updated-at` para locking otimista em pipelines de agentes concorrentes
+```bash
+neurographrag edit --name design-auth --body "Justificativa atualizada após revisão do RFC"
+neurographrag edit --name design-auth --description "Nova descrição curta"
+neurographrag edit --name design-auth \
+  --body-file ./corpo-atualizado.md \
+  --expected-updated-at "2026-04-19T12:00:00Z"
+```
+- Pré-requisitos: a memória deve existir no namespace de destino
+- `--body-file` lê o conteúdo do corpo a partir de um arquivo, evitando problemas de escape
+- `--body-stdin` lê o corpo via stdin para integração em pipelines
+- `--expected-updated-at` aceita timestamp ISO 8601; divergências retornam exit 3
+- Exit code 0: edição concluída e nova versão indexada
+- Exit code 3: conflito de locking otimista — a memória foi modificada concorrentemente
+
+### Usando graph
+- Exporta snapshot completo de entidades e relações em JSON, DOT ou Mermaid
+- Formatos DOT e Mermaid habilitam visualização em Graphviz, VS Code ou mermaid.live
+```bash
+neurographrag graph --format json
+neurographrag graph --format dot --output grafo.dot
+neurographrag graph --format mermaid --output grafo.mmd
+```
+- Pré-requisitos: ao menos uma chamada `link` ou `remember` deve ter criado entidades
+- `--format json` (padrão) emite `{"nodes": [...], "edges": [...]}` no stdout
+- `--format dot` emite um grafo direcionado compatível com Graphviz para renderização offline
+- `--format mermaid` emite um bloco de fluxograma Mermaid para embutir em Markdown
+- `--output <PATH>` grava diretamente em arquivo em vez de imprimir no stdout
+- Exit code 0: exportação concluída
+
+### Usando history
+- Lista todas as versões imutáveis de uma memória nomeada em ordem cronológica reversa
+- Use o inteiro `version` retornado com `restore` para retornar a qualquer estado anterior
+```bash
+neurographrag history --name design-auth
+```
+- Pré-requisitos: a memória deve existir e ter ao menos uma versão armazenada
+- Saída é array JSON com campos `version`, `updated_at` e `body` truncado
+- Versões começam em 1 e incrementam a cada chamada bem-sucedida de `edit` ou `restore`
+- Exit code 0: histórico retornado
+- Exit code 4: memória não encontrada no namespace de destino
+
+### Usando namespace-detect
+- Resolve e exibe o namespace efetivo para o contexto de invocação atual
+- Use para depurar conflitos entre `--namespace`, `NEUROGRAPHRAG_NAMESPACE` e auto-detecção
+```bash
+neurographrag namespace-detect
+neurographrag namespace-detect --namespace meu-projeto
+```
+- Pré-requisitos: nenhum — funciona sem banco de dados presente
+- Saída JSON com campos `namespace` (valor resolvido) e `source` (flag, env ou auto)
+- Ordem de precedência: flag `--namespace` > env `NEUROGRAPHRAG_NAMESPACE` > auto-detecção
+- Exit code 0: resolução concluída
+
+### Usando rename
+- Renomeia uma memória preservando todo o histórico de versões e conexões do grafo de entidades
+- Use `--name`/`--old` e `--new-name`/`--new` de forma intercambiável (aliases desde v2.0.1)
+```bash
+neurographrag rename --name nome-antigo --new-name nome-novo
+neurographrag rename --old nome-antigo --new nome-novo
+```
+- Pré-requisitos: a memória de origem deve existir; o nome de destino deve estar disponível
+- `--expected-updated-at` habilita locking otimista para evitar conflitos de rename concorrente
+- Entradas do histórico permanecem vinculadas ao nome original para integridade da trilha de auditoria
+- Exit code 0: rename concluído
+- Exit code 3: conflito de locking otimista
+- Exit code 4: memória de origem não encontrada
+
+### Usando restore
+- Cria nova versão de uma memória a partir do corpo de uma versão antiga sem sobrescrever o histórico
+- Use `history` primeiro para descobrir os números de versão disponíveis antes de chamar `restore`
+```bash
+neurographrag history --name design-auth
+neurographrag restore --name design-auth --version 2
+```
+- Pré-requisitos: a memória deve existir e o número de versão alvo deve ser válido
+- Restore NÃO sobrescreve o histórico — ele adiciona nova versão com o corpo antigo
+- `--expected-updated-at` habilita locking otimista para segurança em pipelines concorrentes
+- Exit code 0: restore concluído e nova versão indexada
+- Exit code 4: número de versão não encontrado na tabela de histórico
+
+### Usando unlink
+- Remove uma aresta tipada específica entre duas entidades do grafo
+- Use `--from`/`--source` e `--to`/`--target` de forma intercambiável (aliases desde v2.0.1)
+```bash
+neurographrag unlink --from design-auth --to spec-jwt --relation depends-on
+neurographrag unlink --source design-auth --target spec-jwt --relation depends-on
+```
+- Pré-requisitos: a aresta deve existir; os três argumentos `--from`, `--to` e `--relation` são obrigatórios
+- Valores válidos para `--relation`: `applies-to`, `uses`, `depends-on`, `causes`, `fixes`, `contradicts`, `supports`, `follows`, `related`, `mentions`, `replaces`, `tracked-in`
+- Exit code 0: aresta removida
+- Exit code 4: aresta não encontrada
+
+
+## Notas Adicionais Sobre Comandos Essenciais
+### Nota sobre link — GAP 9
+- Pré-requisito: as entidades devem existir no grafo antes de criar links explícitos
+- O comando `remember` extrai automaticamente entidades do texto `--body` durante a ingestão
+- Crie primeiro as memórias que referenciam as entidades e depois chame `link` para tipar as arestas
+```bash
+neurographrag remember --name design-auth --type decision --description "..." --body "Usa JWT e OAuth2."
+neurographrag remember --name spec-jwt --type reference --description "..." --body "RFC 7519 define JWT."
+neurographrag link --from design-auth --to spec-jwt --relation depends-on
+```
+
+### Nota sobre remember — GAP 18
+- `--force-merge` atualiza o corpo de uma memória existente em vez de retornar exit code 2 por nome duplicado
+- Use `--force-merge` em loops de pipeline idempotentes onde a mesma chave pode aparecer múltiplas vezes
+```bash
+neurographrag remember --name notas-config --type project \
+  --description "config atualizada" --body "Novo conteúdo do corpo" --force-merge
+```
 
 
 ## Integração Com Agentes de IA
@@ -186,7 +338,7 @@ neurographrag recall "$QUERY_USUARIO" --k 5 --json \
 ## Próximos Passos
 ### Evolução — Para Onde Ir Depois Deste Guia
 - Leia `COOKBOOK.md` para trinta receitas cobrindo busca, grafo e fluxos em lote
-- Leia `INTEGRATIONS.md` para configuração específica por vendor dos 21 agentes acima
+- Leia `INTEGRATIONS.md` para configuração específica por vendor dos 27 agentes acima
 - Leia `docs/AGENTS.md` para padrões multi-agente de orquestração via Agent Teams
 - Leia `docs/CROSS_PLATFORM.md` para entender binários de targets nas nove plataformas
 - Marque com estrela o repositório em github.com/daniloaguiarbr/neurographrag para acompanhar releases

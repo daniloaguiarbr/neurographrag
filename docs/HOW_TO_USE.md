@@ -145,6 +145,158 @@ neurographrag recall "$USER_QUERY" --k 5 --json \
 - Round-trip latency stays under one hundred milliseconds end to end locally
 
 
+## Configuration and Namespace Notes
+### Namespace Default — GAP 16
+- Default namespace is `global` when `--namespace` is omitted
+- Configure via `NEUROGRAPHRAG_NAMESPACE` env var to override globally
+- Use `namespace-detect` to inspect the resolved namespace before running bulk operations
+
+### Score Semantics — GAP 17
+- JSON output uses `distance` field (cosine distance, lower is more relevant)
+- Text and markdown formats expose `score = 1 - distance` (higher is better)
+- Always prefer `--json` in pipelines to get raw `distance` for precise filtering
+
+### DB Path Discovery — GAP 25
+- All commands accept `--db <PATH>` flag in addition to `NEUROGRAPHRAG_DB_PATH` env var
+- CLI flag takes precedence over environment variable
+- Use `--db` when operating multiple isolated databases in parallel processes
+
+### Concurrency Cap — GAP 27
+- `--max-concurrency` is capped at `2×nCPUs`; higher values return exit 2
+- Exit code 2 signals invalid argument; reduce the value and retry immediately
+- Default of 4 slots is optimal for most laptops running two to four cores
+
+
+## Reference — Subcommands Not Covered in Quick Start
+### Using cleanup-orphans
+- Removes entities that have no memories attached and no graph relationships
+- Run periodically after bulk `forget` operations to keep the entity table lean
+```bash
+neurographrag cleanup-orphans --dry-run
+neurographrag cleanup-orphans --yes
+```
+- Prerequisites: none — works on any initialized database
+- `--dry-run` prints the count of orphan entities without deleting them
+- `--yes` skips the interactive confirmation prompt for scripted pipelines
+- Exit code 0: cleanup succeeded (or nothing to clean)
+- Exit code 75: slot exhausted, retry after a short backoff
+
+### Using edit
+- Alters the body or description of an existing memory in-place creating a new version
+- Use `--expected-updated-at` for optimistic locking in concurrent agent pipelines
+```bash
+neurographrag edit --name auth-design --body "Updated rationale after RFC review"
+neurographrag edit --name auth-design --description "New short description"
+neurographrag edit --name auth-design \
+  --body-file ./updated-body.md \
+  --expected-updated-at "2026-04-19T12:00:00Z"
+```
+- Prerequisites: the memory must already exist in the target namespace
+- `--body-file` reads body content from a file, avoiding shell escaping issues
+- `--body-stdin` reads body from stdin for pipeline integration
+- `--expected-updated-at` accepts ISO 8601 timestamp; mismatches return exit 3
+- Exit code 0: edit succeeded and new version is indexed
+- Exit code 3: optimistic locking conflict — the memory was modified concurrently
+
+### Using graph
+- Exports the full entity-relationship snapshot in JSON, DOT or Mermaid format
+- DOT and Mermaid formats enable visualization in Graphviz, VSCode or mermaid.live
+```bash
+neurographrag graph --format json
+neurographrag graph --format dot --output graph.dot
+neurographrag graph --format mermaid --output graph.mmd
+```
+- Prerequisites: at least one `link` or `remember` call must have created entities
+- `--format json` (default) emits `{"nodes": [...], "edges": [...]}` to stdout
+- `--format dot` emits a Graphviz-compatible directed graph for offline rendering
+- `--format mermaid` emits a Mermaid flowchart block for Markdown embedding
+- `--output <PATH>` writes directly to a file instead of stdout
+- Exit code 0: export succeeded
+
+### Using history
+- Lists all immutable versions of a named memory in reverse chronological order
+- Use the returned `version` integer with `restore` to roll back to any prior state
+```bash
+neurographrag history --name auth-design
+```
+- Prerequisites: the memory must exist and have at least one stored version
+- Output is a JSON array with fields `version`, `updated_at`, and a truncated `body`
+- Versions start at 1 and increment with each successful `edit` or `restore` call
+- Exit code 0: history returned
+- Exit code 4: memory not found in the target namespace
+
+### Using namespace-detect
+- Resolves and prints the effective namespace for the current invocation context
+- Use to debug `--namespace`, `NEUROGRAPHRAG_NAMESPACE`, and auto-detect conflicts
+```bash
+neurographrag namespace-detect
+neurographrag namespace-detect --namespace my-project
+```
+- Prerequisites: none — works without a database present
+- Output JSON with fields `namespace` (resolved value) and `source` (flag, env, or auto)
+- Precedence order: `--namespace` flag > `NEUROGRAPHRAG_NAMESPACE` env > auto-detect
+- Exit code 0: resolution succeeded
+
+### Using rename
+- Renames a memory preserving its full version history and entity graph connections
+- Use `--name`/`--old` and `--new-name`/`--new` interchangeably (aliases from v2.0.1)
+```bash
+neurographrag rename --name old-name --new-name new-name
+neurographrag rename --old old-name --new new-name
+```
+- Prerequisites: the source memory must exist; the target name must be available
+- `--expected-updated-at` enables optimistic locking to prevent concurrent rename conflicts
+- History entries remain linked to the original name for audit trail integrity
+- Exit code 0: rename succeeded
+- Exit code 3: optimistic locking conflict
+- Exit code 4: source memory not found
+
+### Using restore
+- Creates a new version of a memory based on an older version body without overwriting history
+- Use `history` first to discover available version numbers before calling `restore`
+```bash
+neurographrag history --name auth-design
+neurographrag restore --name auth-design --version 2
+```
+- Prerequisites: the memory must exist and the target version number must be valid
+- Restore does NOT overwrite history — it appends a new version with the old body
+- `--expected-updated-at` enables optimistic locking for concurrent pipeline safety
+- Exit code 0: restore succeeded and the new version is indexed
+- Exit code 4: version number not found in the history table
+
+### Using unlink
+- Removes a specific typed edge between two entities from the graph
+- Use `--from`/`--source` and `--to`/`--target` interchangeably (aliases from v2.0.1)
+```bash
+neurographrag unlink --from auth-design --to jwt-spec --relation depends-on
+neurographrag unlink --source auth-design --target jwt-spec --relation depends-on
+```
+- Prerequisites: the edge must exist; all three of `--from`, `--to`, and `--relation` are required
+- Valid `--relation` values: `applies-to`, `uses`, `depends-on`, `causes`, `fixes`, `contradicts`, `supports`, `follows`, `related`, `mentions`, `replaces`, `tracked-in`
+- Exit code 0: edge removed
+- Exit code 4: edge not found
+
+
+## Additional Notes on Core Commands
+### Note on link — GAP 9
+- Prerequisite: entities must exist in the graph before creating explicit links
+- The `remember` command auto-extracts entities from the `--body` text during ingestion
+- Create the memories that reference the entities first, then call `link` to type the edges
+```bash
+neurographrag remember --name auth-design --type decision --description "..." --body "Uses JWT and OAuth2."
+neurographrag remember --name jwt-spec --type reference --description "..." --body "RFC 7519 defines JWT."
+neurographrag link --from auth-design --to jwt-spec --relation depends-on
+```
+
+### Note on remember — GAP 18
+- `--force-merge` updates an existing memory body instead of returning exit code 2 on duplicate name
+- Use `--force-merge` in idempotent pipeline loops where the same key may appear multiple times
+```bash
+neurographrag remember --name config-notes --type project \
+  --description "updated config" --body "New body content" --force-merge
+```
+
+
 ## Integration With AI Agents
 ### Twenty One Agents — One Persistence Layer
 - Claude Code from Anthropic consumes JSON via stdin and orchestrates via exit codes

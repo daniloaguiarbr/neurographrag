@@ -24,8 +24,12 @@ struct StatsResponse {
     relationships: i64,
     /// Alias de `relationships` para contrato documentado.
     relationships_total: i64,
+    /// Alias semântico de `relationships` conforme contrato em AGENT_PROTOCOL.md.
+    edges: i64,
     /// Total de chunks indexados (linha por chunk em `memory_chunks`).
     chunks_total: i64,
+    /// Comprimento médio do campo body nas memórias ativas (não deletadas).
+    avg_body_len: f64,
     namespaces: Vec<String>,
     db_size_bytes: u64,
     /// Alias semântico de `db_size_bytes` para contrato documentado.
@@ -76,6 +80,14 @@ pub fn run(args: StatsArgs) -> Result<(), AppError> {
         .query_row("SELECT COUNT(*) FROM memory_chunks", [], |r| r.get(0))
         .unwrap_or(0);
 
+    let avg_body_len: f64 = conn
+        .query_row(
+            "SELECT COALESCE(AVG(LENGTH(body)), 0.0) FROM memories WHERE deleted_at IS NULL",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or(0.0);
+
     output::emit_json(&StatsResponse {
         memories,
         memories_total: memories,
@@ -83,7 +95,9 @@ pub fn run(args: StatsArgs) -> Result<(), AppError> {
         entities_total: entities,
         relationships,
         relationships_total: relationships,
+        edges: relationships,
         chunks_total,
+        avg_body_len,
         namespaces,
         db_size_bytes,
         db_bytes: db_size_bytes,

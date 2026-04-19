@@ -7,7 +7,7 @@ description: Use esta skill SEMPRE que o usuário perguntar sobre adicionar mem�
 # neurographrag
 
 
-## Regra Zero — Lei Inviolável
+## Regra Zero: Lei Inviolável
 - Você DEVE tratar esta skill como contrato SUPREMO de memória para agentes de IA.
 - Você DEVE invocar a CLI APENAS pelos comandos documentados abaixo.
 - PROIBIDO inventar flags ou subcomandos não documentados.
@@ -93,7 +93,7 @@ description: Use esta skill SEMPRE que o usuário perguntar sobre adicionar mem�
 ## Workflow
 - Passo 1 instale com `cargo install neurographrag` e verifique `neurographrag --version`.
 - Passo 2 inicialize com `neurographrag init --namespace default --lang pt`.
-- Passo 3 armazene com `neurographrag remember --name ticket-42 --type user --body "..."`.
+- Passo 3 armazene com `neurographrag remember --name ticket-42 --type user --description "contexto do ticket" --body "..."`.
 - Passo 4 recupere com `neurographrag recall "bug de autenticação" --json --k 5`.
 - Passo 5 funda com `neurographrag hybrid-search "plano de refactor" --json --k 8`.
 - Passo 6 inspecione com `neurographrag list --type user --json --limit 20`.
@@ -103,7 +103,7 @@ description: Use esta skill SEMPRE que o usuário perguntar sobre adicionar mem�
 
 ## Exemplos
 - Exemplo 1 salva nota de usuário a partir do stdin e captura o identificador retornado.
-- `echo "Finalizar refactor de auth até sexta" | neurographrag remember --name lembrete-auth --type user --json`
+- `echo "Finalizar refactor de auth até sexta" | neurographrag remember --name lembrete-auth --type user --description "lembrete de refactor" --json`
 - Exemplo 2 recupera top matches para tópico de auth usando recuperação híbrida.
 - `neurographrag hybrid-search "erro auth 401" --json --k 5`
 - Exemplo 3 verifica integridade do banco antes do pipeline de release publicar.

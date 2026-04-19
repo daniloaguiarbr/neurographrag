@@ -7,7 +7,7 @@ description: Use this skill WHENEVER the user asks about adding persistent memor
 # neurographrag
 
 
-## Rule Zero — Inviolable Law
+## Rule Zero: Inviolable Law
 - YOU MUST treat this skill as the SUPREME memory contract for any AI agent.
 - YOU MUST invoke the CLI only through the documented commands below.
 - YOU ARE FORBIDDEN from inventing undocumented flags or subcommands.
@@ -93,7 +93,7 @@ description: Use this skill WHENEVER the user asks about adding persistent memor
 ## Workflow
 - Step 1 install with `cargo install neurographrag` and verify `neurographrag --version`.
 - Step 2 initialize with `neurographrag init --namespace default --lang en`.
-- Step 3 store with `neurographrag remember --name ticket-42 --type user --body "..."`.
+- Step 3 store with `neurographrag remember --name ticket-42 --type user --description "ticket context" --body "..."`.
 - Step 4 retrieve with `neurographrag recall "authentication bug" --json --k 5`.
 - Step 5 fuse with `neurographrag hybrid-search "refactor plan" --json --k 8`.
 - Step 6 inspect with `neurographrag list --type user --json --limit 20`.
@@ -103,7 +103,7 @@ description: Use this skill WHENEVER the user asks about adding persistent memor
 
 ## Examples
 - Example 1 saves a user note from stdin and captures the returned identifier.
-- `echo "Finalize auth refactor by Friday" | neurographrag remember --name auth-reminder --type user --json`
+- `echo "Finalize auth refactor by Friday" | neurographrag remember --name auth-reminder --type user --description "auth reminder" --json`
 - Example 2 recalls top matches for an auth topic using hybrid retrieval.
 - `neurographrag hybrid-search "auth error 401" --json --k 5`
 - Example 3 checks database integrity before a release pipeline publishes.
