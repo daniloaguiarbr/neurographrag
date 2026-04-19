@@ -59,7 +59,7 @@ pub enum AppError {
     ///
     /// Reservado para uso em `import`, `reindex` e batch stdin (BLOCO 3/4). Variante presente
     /// desde v2.0.0 mesmo que call-sites ainda não existam — mapeamento estável de exit code.
-    #[error("falha parcial em batch: {failed} de {total} itens falharam")]
+    #[error("batch partial failure: {failed} of {total} items failed")]
     BatchPartialFailure { total: usize, failed: usize },
 
     /// Filesystem I/O error while reading or writing the database or cache. Maps to exit code `14`.
@@ -85,8 +85,8 @@ pub enum AppError {
     /// Ocorre quando [`crate::constants::MAX_CONCURRENT_CLI_INSTANCES`] instâncias já estão
     /// ativas e o limite de espera [`crate::constants::CLI_LOCK_DEFAULT_WAIT_SECS`] foi esgotado.
     #[error(
-        "todos os {max} slots de concorrência ocupados após aguardar {waited_secs}s (exit 75); \
-         use --max-concurrency ou aguarde outras invocações terminarem"
+        "all {max} concurrency slots occupied after waiting {waited_secs}s (exit 75); \
+         use --max-concurrency or wait for other invocations to finish"
     )]
     AllSlotsFull { max: usize, waited_secs: u64 },
 
@@ -95,8 +95,8 @@ pub enum AppError {
     /// Retornado quando `sysinfo` reporta memória disponível inferior a
     /// [`crate::constants::MIN_AVAILABLE_MEMORY_MB`] MiB antes de iniciar o carregamento ONNX.
     #[error(
-        "memória disponível ({available_mb}MB) abaixo do mínimo requerido ({required_mb}MB) \
-         para carregar o modelo; aborte outras cargas ou use --skip-memory-guard (exit 77)"
+        "available memory ({available_mb}MB) below required minimum ({required_mb}MB) \
+         to load the model; abort other loads or use --skip-memory-guard (exit 77)"
     )]
     LowMemory { available_mb: u64, required_mb: u64 },
 }
@@ -268,7 +268,8 @@ mod testes {
         let msg = err.to_string();
         assert!(msg.contains("7"));
         assert!(msg.contains("50"));
-        assert!(msg.contains("falha parcial"));
+        // to_string() usa o #[error] em inglês; PT está em localized_message_for
+        assert!(msg.contains("batch partial failure"));
     }
 
     #[test]

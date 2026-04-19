@@ -8,6 +8,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+use std::time::Instant;
 
 #[derive(clap::Args)]
 pub struct GraphArgs {
@@ -44,9 +45,11 @@ struct EdgeOut {
 struct GraphSnapshot {
     nodes: Vec<NodeOut>,
     edges: Vec<EdgeOut>,
+    elapsed_ms: u64,
 }
 
 pub fn run(args: GraphArgs) -> Result<(), AppError> {
+    let inicio = Instant::now();
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
     if !paths.db.exists() {
@@ -94,7 +97,11 @@ pub fn run(args: GraphArgs) -> Result<(), AppError> {
     }
 
     let rendered = match args.format {
-        GraphExportFormat::Json => render_json(&GraphSnapshot { nodes, edges })?,
+        GraphExportFormat::Json => render_json(&GraphSnapshot {
+            nodes,
+            edges,
+            elapsed_ms: inicio.elapsed().as_millis() as u64,
+        })?,
         GraphExportFormat::Dot => render_dot(&nodes, &edges),
         GraphExportFormat::Mermaid => render_mermaid(&nodes, &edges),
     };
@@ -214,6 +221,7 @@ mod testes {
         let snapshot = GraphSnapshot {
             nodes: vec![node],
             edges: vec![],
+            elapsed_ms: 0,
         };
         let json_str = render_json(&snapshot).expect("renderização deve funcionar");
         let json: serde_json::Value = serde_json::from_str(&json_str).expect("json válido");

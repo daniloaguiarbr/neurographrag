@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/daniloaguiar/neurographrag/schemas/health.schema.json",
+  "title": "HealthResponse",
+  "description": "Response emitted by `neurographrag health` on stdout as a single JSON line. Exit codes: 0 success, 1 runtime error, 2 CLI usage error, 4 database not found.",
+  "$defs": {
+    "HealthCheck": {
+      "type": "object",
+      "required": ["name", "ok"],
+      "additionalProperties": false,
+      "properties": {
+        "name":   { "type": "string" },
+        "ok":     { "type": "boolean" },
+        "detail": { "type": "string", "description": "Present only when ok=false." }
+      }
+    },
+    "HealthCounts": {
+      "type": "object",
+      "required": ["memories", "entities", "relationships", "vec_memories"],
+      "additionalProperties": false,
+      "properties": {
+        "memories":      { "type": "integer", "minimum": 0 },
+        "entities":      { "type": "integer", "minimum": 0 },
+        "relationships": { "type": "integer", "minimum": 0 },
+        "vec_memories":  { "type": "integer", "minimum": 0 }
+      }
+    }
+  },
+  "type": "object",
+  "required": [
+    "status", "integrity", "integrity_ok", "schema_ok",
+    "vec_memories_ok", "vec_entities_ok", "vec_chunks_ok",
+    "fts_ok", "model_ok", "counts", "db_path", "db_size_bytes",
+    "schema_version", "missing_entities", "wal_size_mb",
+    "journal_mode", "checks", "elapsed_ms"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "status":          { "type": "string", "enum": ["ok", "degraded"] },
+    "integrity":       { "type": "string" },
+    "integrity_ok":    { "type": "boolean" },
+    "schema_ok":       { "type": "boolean" },
+    "vec_memories_ok": { "type": "boolean" },
+    "vec_entities_ok": { "type": "boolean" },
+    "vec_chunks_ok":   { "type": "boolean" },
+    "fts_ok":          { "type": "boolean" },
+    "model_ok":        { "type": "boolean" },
+    "counts":          { "$ref": "#/$defs/HealthCounts" },
+    "db_path":         { "type": "string" },
+    "db_size_bytes":   { "type": "integer", "minimum": 0 },
+    "schema_version":  { "type": "integer", "minimum": 0, "description": "MAX(version) from refinery_schema_history." },
+    "missing_entities":{ "type": "array", "items": { "type": "string" } },
+    "wal_size_mb":     { "type": "number", "minimum": 0 },
+    "journal_mode":    { "type": "string" },
+    "checks":          { "type": "array", "items": { "$ref": "#/$defs/HealthCheck" } },
+    "elapsed_ms":      { "type": "integer", "minimum": 0 }
+  }
+}

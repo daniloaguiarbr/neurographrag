@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/daniloaguiar/neurographrag/schemas/stats.schema.json",
+  "title": "StatsResponse",
+  "description": "Response emitted by `neurographrag stats` on stdout as a single JSON line.",
+  "type": "object",
+  "required": [
+    "memories", "memories_total", "entities", "entities_total",
+    "relationships", "relationships_total", "edges",
+    "chunks_total", "avg_body_len", "namespaces",
+    "db_size_bytes", "db_bytes", "schema_version"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "memories":             { "type": "integer", "minimum": 0, "description": "Active (non-deleted) memories." },
+    "memories_total":       { "type": "integer", "minimum": 0, "description": "Including soft-deleted." },
+    "entities":             { "type": "integer", "minimum": 0 },
+    "entities_total":       { "type": "integer", "minimum": 0 },
+    "relationships":        { "type": "integer", "minimum": 0 },
+    "relationships_total":  { "type": "integer", "minimum": 0 },
+    "edges":                { "type": "integer", "minimum": 0 },
+    "chunks_total":         { "type": "integer", "minimum": 0 },
+    "avg_body_len":         { "type": "number",  "minimum": 0 },
+    "namespaces":           { "type": "integer", "minimum": 0 },
+    "db_size_bytes":        { "type": "integer", "minimum": 0 },
+    "db_bytes":             { "type": "integer", "minimum": 0, "description": "Alias of db_size_bytes." },
+    "schema_version":       { "type": "integer" }
+  }
+}

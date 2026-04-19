@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/daniloaguiar/neurographrag/schemas/read.schema.json",
+  "title": "ReadResponse",
+  "description": "Response emitted by `neurographrag read` on stdout as a single JSON line.",
+  "type": "object",
+  "required": [
+    "id", "memory_id", "namespace", "name", "type", "memory_type",
+    "description", "body", "body_hash", "source", "metadata",
+    "version", "created_at", "created_at_iso", "updated_at", "updated_at_iso"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id":             { "type": "integer" },
+    "memory_id":      { "type": "integer" },
+    "namespace":      { "type": "string" },
+    "name":           { "type": "string" },
+    "type":           { "type": "string", "description": "Enum: user|feedback|project|reference|decision|incident|skill" },
+    "memory_type":    { "type": "string", "description": "Alias of `type`." },
+    "description":    { "type": "string" },
+    "body":           { "type": "string" },
+    "body_hash":      { "type": "string", "description": "BLAKE3 hex digest of the body." },
+    "session_id":     { "type": ["string", "null"] },
+    "source":         { "type": "string" },
+    "metadata":       { "type": "string", "description": "JSON string of arbitrary metadata." },
+    "version":        { "type": "integer", "minimum": 1 },
+    "created_at":     { "type": "integer", "description": "Unix epoch seconds." },
+    "created_at_iso": { "type": "string",  "format": "date-time" },
+    "updated_at":     { "type": "integer", "description": "Unix epoch seconds." },
+    "updated_at_iso": { "type": "string",  "format": "date-time" }
+  }
+}

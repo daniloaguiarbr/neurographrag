@@ -439,10 +439,9 @@ let output = Command::new("neurographrag")
 | `10` | SQLite database error | Run `health` to inspect integrity |
 | `11` | Embedding generation failed | Check model files and retry |
 | `12` | `sqlite-vec` extension failed | Reinstall binary with bundled extension |
-| `13` | Batch partial or DB busy | Honor backoff and retry later |
+| `13` | Batch operation partially failed | Inspect partial results and retry failed items |
 | `15` | Database busy after retries | Wait and retry the operation |
-| `73` | Lock busy across slots | Wait and retry or raise `--max-concurrency` |
-| `75` | Lock timeout reached | Increase `--wait-lock` seconds |
+| `75` | Advisory lock held or all slots full | Wait and retry or raise `--max-concurrency` |
 | `77` | Low memory threshold tripped | Free RAM before retry |
 
 
@@ -504,7 +503,7 @@ let output = Command::new("neurographrag")
 - `TEXT_BODY_PREVIEW_LEN` equals 200 characters in list and recall snippets
 - `MAX_CONCURRENT_CLI_INSTANCES` equals 4 across cooperating subprocess agents
 - `CLI_LOCK_DEFAULT_WAIT_SECS` equals 300 seconds before exit code `75`
-- `PURGE_RETENTION_DAYS_DEFAULT` equals 30 days before hard delete becomes allowed
+- `PURGE_RETENTION_DAYS_DEFAULT` equals 90 days before hard delete becomes allowed
 
 
 ## Language Control
@@ -523,6 +522,17 @@ let output = Command::new("neurographrag")
 - Shorthand `--json` is accepted as a no-op alias on subcommands that default to JSON
 - Prefer `--format json` for strict pipelines where argument validation matters
 - Use `--json` for brevity in interactive shell sessions and quick-check commands
+
+
+## Machine-Readable Schemas
+### JSON Schema Draft 2020-12 Files For Every Subcommand
+- Directory `docs/schemas/` ships one `.schema.json` file per subcommand
+- Every schema declares `"additionalProperties": false` — unknown keys are contract violations
+- Schemas use `$defs` for shared subtypes (e.g. `RecallItem`, `HealthCheck`)
+- Optional fields are absent from the `required` array and typed with `["T", "null"]` where nullable
+- Validate a live response: `neurographrag stats | jaq --from-file docs/schemas/stats.schema.json`
+- File `docs/schemas/debug-schema.schema.json` covers the hidden `__debug_schema` diagnostic subcommand
+- Schemas are updated on every breaking change and follow the CLI SemVer major version
 
 
 ## Superpowers Summary

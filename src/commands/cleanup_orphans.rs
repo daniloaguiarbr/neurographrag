@@ -25,9 +25,12 @@ struct CleanupResponse {
     deleted: usize,
     dry_run: bool,
     namespace: Option<String>,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    elapsed_ms: u64,
 }
 
 pub fn run(args: CleanupOrphansArgs) -> Result<(), AppError> {
+    let inicio = std::time::Instant::now();
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
     if !paths.db.exists() {
@@ -61,6 +64,7 @@ pub fn run(args: CleanupOrphansArgs) -> Result<(), AppError> {
         deleted,
         dry_run: args.dry_run,
         namespace: args.namespace.clone(),
+        elapsed_ms: inicio.elapsed().as_millis() as u64,
     };
 
     match args.format {

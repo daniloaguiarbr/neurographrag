@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/daniloaguiar/neurographrag/schemas/remember.schema.json",
+  "title": "RememberResponse",
+  "description": "Response emitted by `neurographrag remember` on stdout as a single JSON line.",
+  "type": "object",
+  "required": [
+    "memory_id", "name", "namespace", "action", "operation", "version",
+    "entities_persisted", "relationships_persisted", "chunks_created",
+    "warnings", "created_at", "created_at_iso", "elapsed_ms"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "memory_id":                { "type": "integer", "description": "Row ID of the persisted or merged memory." },
+    "name":                     { "type": "string",  "description": "Canonical name of the memory." },
+    "namespace":                { "type": "string",  "description": "Namespace the memory belongs to." },
+    "action":                   { "type": "string",  "enum": ["created", "merged"], "description": "Whether the memory was newly created or merged into an existing one." },
+    "operation":                { "type": "string",  "enum": ["created", "merged"], "description": "Semantic alias of `action` for protocol compatibility." },
+    "version":                  { "type": "integer", "description": "Version number after the write (starts at 1)." },
+    "entities_persisted":       { "type": "integer", "minimum": 0 },
+    "relationships_persisted":  { "type": "integer", "minimum": 0 },
+    "chunks_created":           { "type": "integer", "minimum": 0 },
+    "merged_into_memory_id":    { "type": ["integer", "null"], "description": "Present when action=merged; the target memory_id." },
+    "warnings":                 { "type": "array", "items": { "type": "string" } },
+    "created_at":               { "type": "integer", "description": "Unix epoch seconds." },
+    "created_at_iso":           { "type": "string",  "format": "date-time", "description": "RFC 3339 UTC timestamp." },
+    "elapsed_ms":               { "type": "integer", "minimum": 0, "description": "Handler wall-clock time in milliseconds." }
+  }
+}

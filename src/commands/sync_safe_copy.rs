@@ -19,9 +19,12 @@ struct SyncSafeCopyResponse {
     dest_path: String,
     bytes_copied: u64,
     status: String,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    elapsed_ms: u64,
 }
 
 pub fn run(args: SyncSafeCopyArgs) -> Result<(), AppError> {
+    let inicio = std::time::Instant::now();
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
     if !paths.db.exists() {
@@ -61,6 +64,7 @@ pub fn run(args: SyncSafeCopyArgs) -> Result<(), AppError> {
         dest_path: args.dest.display().to_string(),
         bytes_copied,
         status: "ok".to_string(),
+        elapsed_ms: inicio.elapsed().as_millis() as u64,
     })?;
 
     Ok(())

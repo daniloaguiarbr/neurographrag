@@ -38,7 +38,15 @@ struct ListItem {
     updated_at_iso: String,
 }
 
+#[derive(Serialize)]
+struct ListResponse {
+    items: Vec<ListItem>,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    elapsed_ms: u64,
+}
+
 pub fn run(args: ListArgs) -> Result<(), AppError> {
+    let inicio = std::time::Instant::now();
     let namespace = crate::namespace::resolve_namespace(args.namespace.as_deref())?;
     let paths = AppPaths::resolve(args.db.as_deref())?;
     let conn = open_ro(&paths.db)?;
@@ -67,6 +75,16 @@ pub fn run(args: ListArgs) -> Result<(), AppError> {
         })
         .collect();
 
-    output::emit_json(&items)?;
+    match args.format {
+        OutputFormat::Json => output::emit_json(&ListResponse {
+            items,
+            elapsed_ms: inicio.elapsed().as_millis() as u64,
+        })?,
+        OutputFormat::Text | OutputFormat::Markdown => {
+            for item in &items {
+                output::emit_text(&format!("{}: {}", item.name, item.snippet));
+            }
+        }
+    }
     Ok(())
 }

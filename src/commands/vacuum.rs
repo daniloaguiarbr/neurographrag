@@ -16,9 +16,12 @@ struct VacuumResponse {
     size_before_bytes: u64,
     size_after_bytes: u64,
     status: String,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    elapsed_ms: u64,
 }
 
 pub fn run(args: VacuumArgs) -> Result<(), AppError> {
+    let inicio = std::time::Instant::now();
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
     if !paths.db.exists() {
@@ -45,6 +48,7 @@ pub fn run(args: VacuumArgs) -> Result<(), AppError> {
         size_before_bytes,
         size_after_bytes,
         status: "ok".to_string(),
+        elapsed_ms: inicio.elapsed().as_millis() as u64,
     })?;
 
     Ok(())

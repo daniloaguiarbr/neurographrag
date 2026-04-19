@@ -35,9 +35,12 @@ struct StatsResponse {
     /// Alias semântico de `db_size_bytes` para contrato documentado.
     db_bytes: u64,
     schema_version: String,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    elapsed_ms: u64,
 }
 
 pub fn run(args: StatsArgs) -> Result<(), AppError> {
+    let inicio = std::time::Instant::now();
     let _ = args.json; // --json é no-op pois output já é JSON por default
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
@@ -102,6 +105,7 @@ pub fn run(args: StatsArgs) -> Result<(), AppError> {
         db_size_bytes,
         db_bytes: db_size_bytes,
         schema_version,
+        elapsed_ms: inicio.elapsed().as_millis() as u64,
     })?;
 
     Ok(())

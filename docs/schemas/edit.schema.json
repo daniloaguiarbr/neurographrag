@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/daniloaguiar/neurographrag/schemas/edit.schema.json",
+  "title": "EditResponse",
+  "description": "Response emitted by `neurographrag edit` on stdout as a single JSON line.",
+  "type": "object",
+  "required": ["memory_id", "name", "action", "version"],
+  "additionalProperties": false,
+  "properties": {
+    "memory_id": { "type": "integer" },
+    "name":      { "type": "string" },
+    "action":    { "type": "string", "enum": ["updated"] },
+    "version":   { "type": "integer", "minimum": 1 }
+  }
+}

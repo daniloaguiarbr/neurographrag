@@ -32,11 +32,14 @@ struct EditResponse {
     name: String,
     action: String,
     version: i64,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    elapsed_ms: u64,
 }
 
 pub fn run(args: EditArgs) -> Result<(), AppError> {
     use crate::constants::*;
 
+    let inicio = std::time::Instant::now();
     let namespace = crate::namespace::resolve_namespace(args.namespace.as_deref())?;
 
     let paths = AppPaths::resolve(args.db.as_deref())?;
@@ -140,6 +143,7 @@ pub fn run(args: EditArgs) -> Result<(), AppError> {
         name: args.name,
         action: "updated".to_string(),
         version: next_v,
+        elapsed_ms: inicio.elapsed().as_millis() as u64,
     })?;
 
     Ok(())

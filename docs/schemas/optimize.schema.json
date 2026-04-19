@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/daniloaguiar/neurographrag/schemas/optimize.schema.json",
+  "title": "OptimizeResponse",
+  "description": "Response emitted by `neurographrag optimize` on stdout as a single JSON line.",
+  "type": "object",
+  "required": ["db_path", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "db_path": { "type": "string" },
+    "status":  { "type": "string", "enum": ["ok"] }
+  }
+}

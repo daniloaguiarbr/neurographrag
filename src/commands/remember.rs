@@ -62,6 +62,7 @@ struct GraphInput {
 pub fn run(args: RememberArgs) -> Result<(), AppError> {
     use crate::constants::*;
 
+    let inicio = std::time::Instant::now();
     let namespace = crate::namespace::resolve_namespace(args.namespace.as_deref())?;
 
     if args.name.is_empty() || args.name.len() > MAX_MEMORY_NAME_LEN {
@@ -382,6 +383,7 @@ pub fn run(args: RememberArgs) -> Result<(), AppError> {
         warnings,
         created_at: created_at_epoch,
         created_at_iso,
+        elapsed_ms: inicio.elapsed().as_millis() as u64,
     })?;
 
     Ok(())

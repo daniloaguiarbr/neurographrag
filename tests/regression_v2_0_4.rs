@@ -1,0 +1,122 @@
+/// Testes de regressão que protegem os 3 fixes de inconsistência doc/código da v2.0.4 → v2.0.5.
+///
+/// Inconsistência 1: exit 13 (BatchPartialFailure) e exit 15 (DbBusy) eram documentados como
+///   "exit 13 = Batch partial or DB busy" — agora são documentados separadamente.
+///
+/// Inconsistência 2: exit 73 aparecia em AGENTS.md como "lock busy across slots" mas o código
+///   usa exit 75 (LockBusy/AllSlotsFull) — a referência a 73 foi removida da documentação.
+///
+/// Inconsistência 3: PURGE_RETENTION_DAYS era documentado como 30 dias mas o código usa 90.
+
+// ---------------------------------------------------------------------------
+// Regressão 1a — BatchPartialFailure DEVE ter exit code 13 (e não 15)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn regression_v2_0_4_exit_13_apenas_batch_partial() {
+    use neurographrag::errors::AppError;
+    let err = AppError::BatchPartialFailure {
+        total: 5,
+        failed: 2,
+    };
+    assert_eq!(
+        err.exit_code(),
+        13,
+        "BatchPartialFailure DEVE usar exit 13 — não compartilha exit 13 com DbBusy"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Regressão 1b — DbBusy DEVE ter exit code 15 (separado de BatchPartialFailure)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn regression_v2_0_4_exit_15_db_busy() {
+    use neurographrag::errors::AppError;
+    let err = AppError::DbBusy("database is locked".into());
+    assert_eq!(
+        err.exit_code(),
+        15,
+        "DbBusy DEVE usar exit 15 — separado de BatchPartialFailure (13)"
+    );
+}
+
+#[test]
+fn regression_v2_0_4_exit_13_e_15_sao_distintos() {
+    use neurographrag::errors::AppError;
+    let batch = AppError::BatchPartialFailure {
+        total: 3,
+        failed: 1,
+    };
+    let busy = AppError::DbBusy("lock".into());
+    assert_ne!(
+        batch.exit_code(),
+        busy.exit_code(),
+        "BatchPartialFailure (13) e DbBusy (15) DEVEM ter exit codes distintos"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Regressão 2a — LockBusy usa exit 75, NÃO 73
+// ---------------------------------------------------------------------------
+
+#[test]
+fn regression_v2_0_4_exit_75_lock_busy_nao_73() {
+    use neurographrag::errors::AppError;
+    let err = AppError::LockBusy("outra instância segura o lock".into());
+    assert_eq!(err.exit_code(), 75, "LockBusy DEVE usar exit 75 (não 73)");
+    assert_ne!(err.exit_code(), 73, "LockBusy NÃO deve usar exit 73");
+}
+
+#[test]
+fn regression_v2_0_4_exit_75_all_slots_full_nao_73() {
+    use neurographrag::errors::AppError;
+    let err = AppError::AllSlotsFull {
+        max: 4,
+        waited_secs: 30,
+    };
+    assert_eq!(
+        err.exit_code(),
+        75,
+        "AllSlotsFull DEVE usar exit 75 (não 73)"
+    );
+    assert_ne!(err.exit_code(), 73, "AllSlotsFull NÃO deve usar exit 73");
+}
+
+// ---------------------------------------------------------------------------
+// Regressão 2b — AGENTS.md não contém referência ao exit 73
+// ---------------------------------------------------------------------------
+
+#[test]
+fn regression_v2_0_4_docs_agents_nao_menciona_exit_73() {
+    let caminho = concat!(env!("CARGO_MANIFEST_DIR"), "/docs/AGENTS.md");
+    let conteudo = std::fs::read_to_string(caminho).expect("docs/AGENTS.md deve existir");
+    assert!(
+        !conteudo.contains("exit 73")
+            && !conteudo.contains("code 73")
+            && !conteudo.contains("= 73"),
+        "docs/AGENTS.md NÃO deve mencionar exit 73 — o código usa 75 para LockBusy/AllSlotsFull"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Regressão 3 — PURGE_RETENTION_DAYS_DEFAULT é 90, não 30
+// ---------------------------------------------------------------------------
+
+#[test]
+fn regression_v2_0_4_purge_retention_days_default_eh_90() {
+    use neurographrag::constants::PURGE_RETENTION_DAYS_DEFAULT;
+    assert_eq!(
+        PURGE_RETENTION_DAYS_DEFAULT, 90,
+        "PURGE_RETENTION_DAYS_DEFAULT DEVE ser 90 — documentação foi corrigida de 30 para 90"
+    );
+}
+
+#[test]
+fn regression_v2_0_4_purge_retention_days_nao_eh_30() {
+    use neurographrag::constants::PURGE_RETENTION_DAYS_DEFAULT;
+    assert_ne!(
+        PURGE_RETENTION_DAYS_DEFAULT, 30,
+        "PURGE_RETENTION_DAYS_DEFAULT NÃO deve ser 30 (valor antigo da documentação desatualizada)"
+    );
+}

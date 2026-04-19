@@ -33,9 +33,12 @@ struct RenameResponse {
     memory_id: i64,
     name: String,
     version: i64,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    elapsed_ms: u64,
 }
 
 pub fn run(args: RenameArgs) -> Result<(), AppError> {
+    let inicio = std::time::Instant::now();
     use crate::constants::*;
 
     let namespace = crate::namespace::resolve_namespace(args.namespace.as_deref())?;
@@ -130,6 +133,7 @@ pub fn run(args: RenameArgs) -> Result<(), AppError> {
         memory_id,
         name: args.new_name,
         version: next_v,
+        elapsed_ms: inicio.elapsed().as_millis() as u64,
     })?;
 
     Ok(())

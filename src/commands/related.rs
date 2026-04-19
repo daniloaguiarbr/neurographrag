@@ -39,6 +39,12 @@ pub struct RelatedArgs {
     pub db: Option<String>,
 }
 
+#[derive(Serialize)]
+struct RelatedResponse {
+    results: Vec<RelatedMemory>,
+    elapsed_ms: u64,
+}
+
 #[derive(Serialize, Clone)]
 struct RelatedMemory {
     memory_id: i64,
@@ -55,6 +61,7 @@ struct RelatedMemory {
 }
 
 pub fn run(args: RelatedArgs) -> Result<(), AppError> {
+    let inicio = std::time::Instant::now();
     let name = args
         .name_positional
         .as_deref()
@@ -117,7 +124,10 @@ pub fn run(args: RelatedArgs) -> Result<(), AppError> {
     )?;
 
     match args.format {
-        OutputFormat::Json => output::emit_json(&results)?,
+        OutputFormat::Json => output::emit_json(&RelatedResponse {
+            results,
+            elapsed_ms: inicio.elapsed().as_millis() as u64,
+        })?,
         OutputFormat::Text => {
             for item in &results {
                 if item.description.is_empty() {

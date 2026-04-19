@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/daniloaguiar/neurographrag/schemas/unlink.schema.json",
+  "title": "UnlinkResponse",
+  "description": "Response emitted by `neurographrag unlink` on stdout as a single JSON line.",
+  "type": "object",
+  "required": ["action", "relationship_id", "from_name", "to_name", "relation", "namespace"],
+  "additionalProperties": false,
+  "properties": {
+    "action":          { "type": "string", "enum": ["deleted"] },
+    "relationship_id": { "type": "integer" },
+    "from_name":       { "type": "string" },
+    "to_name":         { "type": "string" },
+    "relation":        { "type": "string" },
+    "namespace":       { "type": "string" }
+  }
+}

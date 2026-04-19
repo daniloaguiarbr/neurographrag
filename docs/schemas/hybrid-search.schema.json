@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/daniloaguiar/neurographrag/schemas/hybrid-search.schema.json",
+  "title": "HybridSearchResponse",
+  "description": "Response emitted by `neurographrag hybrid-search` on stdout as a single JSON line.",
+  "$defs": {
+    "HybridSearchItem": {
+      "type": "object",
+      "required": ["memory_id", "name", "namespace", "type", "description", "body", "combined_score", "score", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "memory_id":     { "type": "integer" },
+        "name":          { "type": "string" },
+        "namespace":     { "type": "string" },
+        "type":          { "type": "string" },
+        "description":   { "type": "string" },
+        "body":          { "type": "string" },
+        "combined_score":{ "type": "number",  "description": "RRF combined score." },
+        "score":         { "type": "number",  "description": "Alias of combined_score." },
+        "source":        { "type": "string",  "enum": ["hybrid"] },
+        "vec_rank":      { "type": "integer", "minimum": 1, "description": "Present when result appeared in vector search." },
+        "fts_rank":      { "type": "integer", "minimum": 1, "description": "Present when result appeared in full-text search." }
+      }
+    },
+    "RecallItem": {
+      "type": "object",
+      "required": ["memory_id", "name", "namespace", "type", "description", "snippet", "distance", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "memory_id":   { "type": "integer" },
+        "name":        { "type": "string" },
+        "namespace":   { "type": "string" },
+        "type":        { "type": "string" },
+        "description": { "type": "string" },
+        "snippet":     { "type": "string" },
+        "distance":    { "type": "number" },
+        "source":      { "type": "string" }
+      }
+    },
+    "Weights": {
+      "type": "object",
+      "required": ["vec", "fts"],
+      "additionalProperties": false,
+      "properties": {
+        "vec": { "type": "number" },
+        "fts": { "type": "number" }
+      }
+    }
+  },
+  "type": "object",
+  "required": ["query", "k", "rrf_k", "weights", "results", "graph_matches", "elapsed_ms"],
+  "additionalProperties": false,
+  "properties": {
+    "query":         { "type": "string" },
+    "k":             { "type": "integer", "minimum": 1 },
+    "rrf_k":         { "type": "integer", "minimum": 1, "description": "RRF k parameter." },
+    "weights":       { "$ref": "#/$defs/Weights" },
+    "results":       { "type": "array", "items": { "$ref": "#/$defs/HybridSearchItem" } },
+    "graph_matches": { "type": "array", "items": { "$ref": "#/$defs/RecallItem" } },
+    "elapsed_ms":    { "type": "integer", "minimum": 0 }
+  }
+}

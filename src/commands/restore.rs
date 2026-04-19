@@ -30,9 +30,12 @@ struct RestoreResponse {
     name: String,
     version: i64,
     restored_from: i64,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    elapsed_ms: u64,
 }
 
 pub fn run(args: RestoreArgs) -> Result<(), AppError> {
+    let inicio = std::time::Instant::now();
     let namespace = crate::namespace::resolve_namespace(args.namespace.as_deref())?;
     let paths = AppPaths::resolve(args.db.as_deref())?;
     let mut conn = open_rw(&paths.db)?;
@@ -132,6 +135,7 @@ pub fn run(args: RestoreArgs) -> Result<(), AppError> {
         name: old_name,
         version: next_v,
         restored_from: args.version,
+        elapsed_ms: inicio.elapsed().as_millis() as u64,
     })?;
 
     Ok(())

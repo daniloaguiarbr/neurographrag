@@ -296,7 +296,7 @@ fn test_list_memorias() {
         .clone();
 
     let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
-    assert!(json.as_array().unwrap().len() >= 2);
+    assert!(json["items"].as_array().unwrap().len() >= 2);
 }
 
 // ---------------------------------------------------------------------------
@@ -1289,7 +1289,9 @@ fn test_related_encontra_memorias_via_grafo() {
         .clone();
 
     let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
-    let arr = json.as_array().expect("related retorna array");
+    let arr = json["results"]
+        .as_array()
+        .expect("related retorna results array");
     // deve conter pelo menos uma das outras duas memórias via hop
     let names: Vec<&str> = arr.iter().filter_map(|v| v["name"].as_str()).collect();
     assert!(
@@ -1339,7 +1341,7 @@ fn test_related_retorna_vazio_quando_memoria_sem_entidades() {
         .clone();
 
     let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
-    assert_eq!(json.as_array().unwrap().len(), 0);
+    assert_eq!(json["results"].as_array().unwrap().len(), 0);
 }
 
 // ---------------------------------------------------------------------------

@@ -118,6 +118,7 @@ fn main() {
         neurographrag::cli::Commands::Related(args) => commands::related::run(args),
         neurographrag::cli::Commands::Graph(args) => commands::graph_export::run(args),
         neurographrag::cli::Commands::CleanupOrphans(args) => commands::cleanup_orphans::run(args),
+        neurographrag::cli::Commands::DebugSchema(args) => commands::debug_schema::run(args),
     };
 
     if let Err(e) = result {

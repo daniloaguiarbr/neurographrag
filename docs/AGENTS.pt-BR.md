@@ -439,10 +439,9 @@ let output = Command::new("neurographrag")
 | `10` | Erro SQLite no banco de dados | Rode `health` para inspecionar integridade |
 | `11` | Falha na geração de embedding | Verifique arquivos do modelo e repita |
 | `12` | Extensão `sqlite-vec` falhou | Reinstale o binário com extensão embutida |
-| `13` | Batch parcial ou DB ocupado | Respeite backoff e repita depois |
+| `13` | Operação em batch parcialmente falhou | Inspecione resultados parciais e repita os itens falhos |
 | `15` | Banco ocupado após tentativas | Aguarde e repita a operação |
-| `73` | Lock ocupado entre slots | Aguarde ou eleve `--max-concurrency` |
-| `75` | Timeout de lock atingido | Eleve `--wait-lock` em segundos |
+| `75` | Lock advisory ocupado ou todos os slots preenchidos | Aguarde e repita ou eleve `--max-concurrency` |
 | `77` | Limite de memória baixo acionado | Libere RAM antes de repetir |
 
 
@@ -502,7 +501,7 @@ let output = Command::new("neurographrag")
 - `TEXT_BODY_PREVIEW_LEN` vale 200 caracteres em snippets de list e recall
 - `MAX_CONCURRENT_CLI_INSTANCES` vale 4 entre agentes subprocess cooperando
 - `CLI_LOCK_DEFAULT_WAIT_SECS` vale 300 segundos antes do exit code `75`
-- `PURGE_RETENTION_DAYS_DEFAULT` vale 30 dias antes do hard delete ficar permitido
+- `PURGE_RETENTION_DAYS_DEFAULT` vale 90 dias antes do hard delete ficar permitido
 
 
 ## Controle De Idioma
@@ -512,6 +511,17 @@ let output = Command::new("neurographrag")
 - Env `NEUROGRAPHRAG_LANG=pt` sobrescreve locale do sistema quando falta `--lang`
 - Sem flag e sem env cai no fallback por `sys_locale::get_locale()` do runtime
 - Locales desconhecidos caem em inglês sem emitir warning algum no stderr
+
+
+## Schemas Legíveis por Máquina
+### Arquivos JSON Schema Draft 2020-12 Para Cada Subcomando
+- O diretório `docs/schemas/` contém um arquivo `.schema.json` por subcomando
+- Todo schema declara `"additionalProperties": false` — chaves desconhecidas são violações de contrato
+- Schemas usam `$defs` para subtipos compartilhados (ex: `RecallItem`, `HealthCheck`)
+- Campos opcionais ficam fora do array `required` e são tipados com `["T", "null"]` quando anuláveis
+- Validar resposta em tempo real: `neurographrag stats | jaq --from-file docs/schemas/stats.schema.json`
+- O arquivo `docs/schemas/debug-schema.schema.json` cobre o subcomando diagnóstico oculto `__debug_schema`
+- Schemas são atualizados a cada breaking change e seguem a versão major SemVer da CLI
 
 
 ## Resumo Dos Superpoderes

@@ -41,6 +41,8 @@ struct ReadResponse {
     updated_at: i64,
     /// Timestamp RFC 3339 UTC paralelo a `updated_at` para parsers ISO 8601.
     updated_at_iso: String,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    elapsed_ms: u64,
 }
 
 fn epoch_to_iso(epoch: i64) -> String {
@@ -50,6 +52,7 @@ fn epoch_to_iso(epoch: i64) -> String {
 }
 
 pub fn run(args: ReadArgs) -> Result<(), AppError> {
+    let inicio = std::time::Instant::now();
     let namespace = crate::namespace::resolve_namespace(args.namespace.as_deref())?;
     let paths = AppPaths::resolve(args.db.as_deref())?;
     let conn = open_ro(&paths.db)?;
@@ -83,6 +86,7 @@ pub fn run(args: ReadArgs) -> Result<(), AppError> {
                 created_at_iso: epoch_to_iso(row.created_at),
                 updated_at: row.updated_at,
                 updated_at_iso: epoch_to_iso(row.updated_at),
+                elapsed_ms: inicio.elapsed().as_millis() as u64,
             };
             output::emit_json(&response)?;
         }

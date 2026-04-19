@@ -37,9 +37,12 @@ pub struct PurgeResponse {
     pub namespace: Option<String>,
     pub cutoff_epoch: i64,
     pub warnings: Vec<String>,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    pub elapsed_ms: u64,
 }
 
 pub fn run(args: PurgeArgs) -> Result<(), AppError> {
+    let inicio = std::time::Instant::now();
     let namespace = crate::namespace::resolve_namespace(args.namespace.as_deref())?;
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
@@ -98,6 +101,7 @@ pub fn run(args: PurgeArgs) -> Result<(), AppError> {
         namespace: Some(namespace),
         cutoff_epoch,
         warnings,
+        elapsed_ms: inicio.elapsed().as_millis() as u64,
     })?;
 
     Ok(())
@@ -353,11 +357,13 @@ mod tests {
             namespace: Some("global".to_string()),
             cutoff_epoch: 1_710_000_000,
             warnings: vec![],
+            elapsed_ms: 42,
         };
         let json = serde_json::to_string(&resp).expect("serialização falhou");
         assert!(json.contains("bytes_freed"));
         assert!(json.contains("oldest_deleted_at"));
         assert!(json.contains("retention_days_used"));
         assert!(json.contains("dry_run"));
+        assert!(json.contains("elapsed_ms"));
     }
 }

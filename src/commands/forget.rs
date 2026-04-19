@@ -20,9 +20,12 @@ struct ForgetResponse {
     forgotten: bool,
     name: String,
     namespace: String,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    elapsed_ms: u64,
 }
 
 pub fn run(args: ForgetArgs) -> Result<(), AppError> {
+    let inicio = std::time::Instant::now();
     let namespace = crate::namespace::resolve_namespace(args.namespace.as_deref())?;
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
@@ -52,6 +55,7 @@ pub fn run(args: ForgetArgs) -> Result<(), AppError> {
         forgotten: true,
         name: args.name,
         namespace,
+        elapsed_ms: inicio.elapsed().as_millis() as u64,
     })?;
 
     Ok(())

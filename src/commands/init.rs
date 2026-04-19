@@ -29,9 +29,12 @@ struct InitResponse {
     /// Namespace ativo resolvido durante a inicialização, alinhado à doc bilíngue.
     namespace: String,
     status: String,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    elapsed_ms: u64,
 }
 
 pub fn run(args: InitArgs) -> Result<(), AppError> {
+    let inicio = std::time::Instant::now();
     let paths = AppPaths::resolve(args.db.as_deref())?;
     paths.ensure_dirs()?;
 
@@ -83,6 +86,7 @@ pub fn run(args: InitArgs) -> Result<(), AppError> {
         dim: test_emb.len(),
         namespace,
         status: "ok".to_string(),
+        elapsed_ms: inicio.elapsed().as_millis() as u64,
     })?;
 
     Ok(())

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/daniloaguiar/neurographrag/schemas/rename.schema.json",
+  "title": "RenameResponse",
+  "description": "Response emitted by `neurographrag rename` on stdout as a single JSON line.",
+  "type": "object",
+  "required": ["memory_id", "name", "version"],
+  "additionalProperties": false,
+  "properties": {
+    "memory_id": { "type": "integer" },
+    "name":      { "type": "string", "description": "New canonical name after rename." },
+    "version":   { "type": "integer", "minimum": 1 }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/daniloaguiar/neurographrag/schemas/debug-schema.schema.json",
+  "title": "DebugSchemaResponse",
+  "description": "Response emitted by the hidden `neurographrag __debug_schema` subcommand on stdout as a single JSON line. Intended for diagnostic tooling only.",
+  "$defs": {
+    "SchemaObject": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["table", "view", "trigger", "index"] }
+      }
+    },
+    "MigrationRecord": {
+      "type": "object",
+      "required": ["version", "name", "applied_on"],
+      "additionalProperties": false,
+      "properties": {
+        "version":    { "type": "integer" },
+        "name":       { "type": "string" },
+        "applied_on": { "type": "string", "description": "ISO 8601 timestamp string." }
+      }
+    }
+  },
+  "type": "object",
+  "required": ["schema_version", "user_version", "objects", "migrations", "elapsed_ms"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "integer", "description": "SQLite PRAGMA schema_version." },
+    "user_version":   { "type": "integer", "description": "SQLite PRAGMA user_version (refinery migration counter)." },
+    "objects":        { "type": "array", "items": { "$ref": "#/$defs/SchemaObject" } },
+    "migrations":     { "type": "array", "items": { "$ref": "#/$defs/MigrationRecord" } },
+    "elapsed_ms":     { "type": "integer", "minimum": 0 }
+  }
+}

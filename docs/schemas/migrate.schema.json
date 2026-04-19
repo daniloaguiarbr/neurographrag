@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/daniloaguiar/neurographrag/schemas/migrate.schema.json",
+  "title": "MigrateResponse",
+  "description": "Response emitted by `neurographrag migrate` on stdout as a single JSON line.",
+  "type": "object",
+  "required": ["db_path", "schema_version", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "db_path":        { "type": "string" },
+    "schema_version": { "type": "integer" },
+    "status":         { "type": "string", "enum": ["ok", "already_up_to_date"] }
+  }
+}

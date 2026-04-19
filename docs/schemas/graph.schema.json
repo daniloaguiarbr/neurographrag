@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/daniloaguiar/neurographrag/schemas/graph.schema.json",
+  "title": "GraphSnapshot",
+  "description": "Response emitted by `neurographrag graph --format json` on stdout as a single JSON line. Exit codes: 0 success, 1 runtime error, 2 CLI usage error.",
+  "$defs": {
+    "NodeOut": {
+      "type": "object",
+      "required": ["id", "name", "namespace", "kind", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "id":        { "type": "integer" },
+        "name":      { "type": "string" },
+        "namespace": { "type": "string" },
+        "kind":      { "type": "string" },
+        "type":      { "type": "string", "description": "Duplicate of kind for compatibility." }
+      }
+    },
+    "EdgeOut": {
+      "type": "object",
+      "required": ["from", "to", "relation", "weight"],
+      "additionalProperties": false,
+      "properties": {
+        "from":     { "type": "string", "description": "Source entity name." },
+        "to":       { "type": "string", "description": "Target entity name." },
+        "relation": { "type": "string" },
+        "weight":   { "type": "number", "minimum": 0.0, "maximum": 1.0 }
+      }
+    }
+  },
+  "type": "object",
+  "required": ["nodes", "edges", "elapsed_ms"],
+  "additionalProperties": false,
+  "properties": {
+    "nodes":      { "type": "array", "items": { "$ref": "#/$defs/NodeOut" } },
+    "edges":      { "type": "array", "items": { "$ref": "#/$defs/EdgeOut" } },
+    "elapsed_ms": { "type": "integer", "minimum": 0, "description": "Wall-clock time in milliseconds." }
+  }
+}

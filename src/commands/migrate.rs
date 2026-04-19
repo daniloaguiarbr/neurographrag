@@ -18,9 +18,12 @@ struct MigrateResponse {
     db_path: String,
     schema_version: String,
     status: String,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    elapsed_ms: u64,
 }
 
 pub fn run(args: MigrateArgs) -> Result<(), AppError> {
+    let inicio = std::time::Instant::now();
     let _ = args.json; // --json é no-op pois output já é JSON por default
     let paths = AppPaths::resolve(args.db.as_deref())?;
     paths.ensure_dirs()?;
@@ -40,6 +43,7 @@ pub fn run(args: MigrateArgs) -> Result<(), AppError> {
         db_path: paths.db.display().to_string(),
         schema_version,
         status: "ok".to_string(),
+        elapsed_ms: inicio.elapsed().as_millis() as u64,
     })?;
 
     Ok(())

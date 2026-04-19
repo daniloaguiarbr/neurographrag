@@ -168,6 +168,8 @@ pub enum Commands {
     Graph(graph_export::GraphArgs),
     /// Remove entities that have no memories and no relationships
     CleanupOrphans(cleanup_orphans::CleanupOrphansArgs),
+    #[command(name = "__debug_schema", hide = true)]
+    DebugSchema(debug_schema::DebugSchemaArgs),
 }
 
 #[derive(Copy, Clone, Debug, clap::ValueEnum)]

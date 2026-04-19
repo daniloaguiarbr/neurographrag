@@ -57,6 +57,8 @@ pub struct RememberResponse {
     pub created_at: i64,
     /// Timestamp RFC 3339 UTC string paralelo a `created_at` para parsers ISO 8601.
     pub created_at_iso: String,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    pub elapsed_ms: u64,
 }
 
 #[derive(Serialize, Clone)]
@@ -154,6 +156,7 @@ mod tests {
             warnings: vec!["aviso".to_string()],
             created_at: 1776569715,
             created_at_iso: "2026-04-19T03:34:15Z".to_string(),
+            elapsed_ms: 123,
         };
         let json = serde_json::to_string(&r).unwrap();
         assert!(json.contains("memory_id"));
@@ -163,6 +166,7 @@ mod tests {
         assert!(json.contains("\"operation\""));
         assert!(json.contains("\"created_at\""));
         assert!(json.contains("\"created_at_iso\""));
+        assert!(json.contains("\"elapsed_ms\""));
     }
 
     #[test]

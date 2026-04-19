@@ -2,6 +2,7 @@ use crate::errors::AppError;
 use directories::ProjectDirs;
 use std::path::PathBuf;
 
+#[derive(Debug)]
 pub struct AppPaths {
     pub db: PathBuf,
     pub models: PathBuf,

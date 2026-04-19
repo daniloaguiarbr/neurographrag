@@ -32,9 +32,12 @@ struct UnlinkResponse {
     to_name: String,
     relation: String,
     namespace: String,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    elapsed_ms: u64,
 }
 
 pub fn run(args: UnlinkArgs) -> Result<(), AppError> {
+    let inicio = std::time::Instant::now();
     let namespace = crate::namespace::resolve_namespace(args.namespace.as_deref())?;
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
@@ -84,6 +87,7 @@ pub fn run(args: UnlinkArgs) -> Result<(), AppError> {
         to_name: args.to.clone(),
         relation: relation_str.to_string(),
         namespace: namespace.clone(),
+        elapsed_ms: inicio.elapsed().as_millis() as u64,
     };
 
     match args.format {

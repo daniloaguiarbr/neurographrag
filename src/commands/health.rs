@@ -4,6 +4,7 @@ use crate::paths::AppPaths;
 use crate::storage::connection::open_ro;
 use serde::Serialize;
 use std::fs;
+use std::time::Instant;
 
 #[derive(clap::Args)]
 pub struct HealthArgs {
@@ -44,8 +45,8 @@ struct HealthResponse {
     counts: HealthCounts,
     db_path: String,
     db_size_bytes: u64,
-    /// Versão do schema aplicado (top-level para contrato documentado em AGENT_PROTOCOL.md).
-    schema_version: String,
+    /// Versão do schema aplicado via refinery (inteiro, compatível com u32).
+    schema_version: u32,
     /// Lista de entidades referenciadas por memórias mas ausentes na tabela de entidades.
     /// Vazio em DB saudável. Conforme contrato documentado em AGENT_PROTOCOL.md.
     missing_entities: Vec<String>,
@@ -54,6 +55,7 @@ struct HealthResponse {
     /// Modo de journaling do SQLite (wal, delete, truncate, persist, memory, off).
     journal_mode: String,
     checks: Vec<HealthCheck>,
+    elapsed_ms: u64,
 }
 
 /// Verifica se uma tabela (incluindo virtuais) existe em sqlite_master.
@@ -68,6 +70,7 @@ fn table_exists(conn: &rusqlite::Connection, table_name: &str) -> bool {
 }
 
 pub fn run(args: HealthArgs) -> Result<(), AppError> {
+    let inicio = Instant::now();
     let _ = args.json; // --json é no-op pois output já é JSON por default
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
@@ -96,15 +99,15 @@ pub fn run(args: HealthArgs) -> Result<(), AppError> {
     let integrity_ok = integrity == "ok";
     let status = if integrity_ok { "ok" } else { "degraded" };
 
-    let schema_version: String = conn
+    let schema_version: u32 = conn
         .query_row(
-            "SELECT value FROM schema_meta WHERE key='schema_version'",
+            "SELECT COALESCE(MAX(version), 0) FROM refinery_schema_history",
             [],
-            |r| r.get(0),
+            |r| r.get::<_, i64>(0),
         )
-        .unwrap_or_else(|_| "unknown".to_string());
+        .unwrap_or(0) as u32;
 
-    let schema_ok = !schema_version.is_empty() && schema_version != "unknown";
+    let schema_ok = schema_version > 0;
 
     // Verifica tabelas vetoriais via sqlite_master
     let vec_memories_ok = table_exists(&conn, "vec_memories");
@@ -161,7 +164,7 @@ pub fn run(args: HealthArgs) -> Result<(), AppError> {
         detail: if schema_ok {
             None
         } else {
-            Some(format!("schema_version={schema_version:?}"))
+            Some(format!("schema_version={schema_version} (esperado >0)"))
         },
     });
 
@@ -241,6 +244,7 @@ pub fn run(args: HealthArgs) -> Result<(), AppError> {
         wal_size_mb,
         journal_mode,
         checks,
+        elapsed_ms: inicio.elapsed().as_millis() as u64,
     })?;
 
     Ok(())
@@ -270,7 +274,8 @@ mod testes {
             },
             db_path: "/tmp/test.sqlite".to_string(),
             db_size_bytes: 4096,
-            schema_version: "1".to_string(),
+            schema_version: 5,
+            elapsed_ms: 0,
             missing_entities: vec![],
             wal_size_mb: 0.0,
             journal_mode: "wal".to_string(),

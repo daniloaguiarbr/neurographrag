@@ -59,7 +59,7 @@ neurographrag recall "estratégia de autenticação" --k 5 --json
 neurographrag hybrid-search "design jwt" --k 10 --rrf-k 60 --json
 neurographrag read --name design-auth
 neurographrag forget --name design-auth
-neurographrag purge --retention-days 30 --yes
+neurographrag purge --retention-days 90 --yes
 ```
 - `init` inicializa o banco, baixa o modelo e valida a extensão `sqlite-vec`
 - `remember` armazena conteúdo, extrai entidades e gera embeddings atomicamente

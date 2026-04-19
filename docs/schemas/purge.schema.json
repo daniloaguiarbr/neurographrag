@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/daniloaguiar/neurographrag/schemas/purge.schema.json",
+  "title": "PurgeResponse",
+  "description": "Response emitted by `neurographrag purge` on stdout as a single JSON line.",
+  "type": "object",
+  "required": ["purged_count", "bytes_freed", "dry_run", "namespace"],
+  "additionalProperties": false,
+  "properties": {
+    "purged_count":         { "type": "integer", "minimum": 0 },
+    "bytes_freed":          { "type": "integer", "minimum": 0 },
+    "oldest_deleted_at":    { "type": ["string", "null"], "format": "date-time" },
+    "retention_days_used":  { "type": ["integer", "null"], "minimum": 0 },
+    "dry_run":              { "type": "boolean" },
+    "namespace":            { "type": "string" },
+    "cutoff_epoch":         { "type": ["integer", "null"] },
+    "warnings":             { "type": "array", "items": { "type": "string" } }
+  }
+}

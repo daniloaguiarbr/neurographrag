@@ -39,9 +39,12 @@ struct LinkResponse {
     relation: String,
     weight: f64,
     namespace: String,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    elapsed_ms: u64,
 }
 
 pub fn run(args: LinkArgs) -> Result<(), AppError> {
+    let inicio = std::time::Instant::now();
     let namespace = crate::namespace::resolve_namespace(args.namespace.as_deref())?;
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
@@ -114,6 +117,7 @@ pub fn run(args: LinkArgs) -> Result<(), AppError> {
         relation: relation_str.to_string(),
         weight,
         namespace: namespace.clone(),
+        elapsed_ms: inicio.elapsed().as_millis() as u64,
     };
 
     match args.format {
@@ -144,6 +148,7 @@ mod testes {
             relation: "uses".to_string(),
             weight: 1.0,
             namespace: "default".to_string(),
+            elapsed_ms: 0,
         };
         let json = serde_json::to_value(&resp).expect("serialização deve funcionar");
         assert_eq!(json["source"], json["from"]);
@@ -163,6 +168,7 @@ mod testes {
             relation: "mentions".to_string(),
             weight: 0.8,
             namespace: "teste".to_string(),
+            elapsed_ms: 5,
         };
         let json = serde_json::to_value(&resp).expect("serialização deve funcionar");
         assert!(json.get("action").is_some());
@@ -173,5 +179,6 @@ mod testes {
         assert!(json.get("relation").is_some());
         assert!(json.get("weight").is_some());
         assert!(json.get("namespace").is_some());
+        assert!(json.get("elapsed_ms").is_some());
     }
 }

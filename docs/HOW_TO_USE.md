@@ -59,7 +59,7 @@ neurographrag recall "authentication strategy" --k 5 --json
 neurographrag hybrid-search "jwt design" --k 10 --rrf-k 60 --json
 neurographrag read --name auth-design
 neurographrag forget --name auth-design
-neurographrag purge --days 30 --yes
+neurographrag purge --days 90 --yes
 ```
 - `init` bootstraps the database, downloads the model and validates the `sqlite-vec` extension
 - `remember` stores content, extracts entities and generates embeddings atomically

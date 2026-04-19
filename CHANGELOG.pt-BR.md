@@ -30,6 +30,24 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/spec
 - Toda a documentação agora segue docs_rules/rules_rust_documentacao.md
 
 
+## [2.0.5] — 2026-04-19
+
+### Corrigido
+- Exit code 13 documentado como `BatchPartialFailure` e exit code 15 como `DbBusy` em AGENTS.md — separação correta conforme `src/errors.rs` desde v2.0.0
+- Exit code 73 substituído por 75 (`LockBusy/AllSlotsFull`) em todas as referências de documentação
+- `PURGE_RETENTION_DAYS` corrigido de 30 para 90 em AGENTS.md e HOW_TO_USE.md EN+pt-BR — alinhado à constante `PURGE_RETENTION_DAYS_DEFAULT = 90` em `src/constants.rs`
+
+### Adicionado
+- `elapsed_ms: u64` padronizado em todos os comandos que ainda não expunham o campo — uniformidade de contrato JSON
+- `schema_version: u32` adicionado ao JSON stdout de `health` — facilita detecção de migração por agentes
+- Subcomando oculto `__debug_schema` que imprime schema SQLite + versão de migrations para diagnóstico
+- Diretório `docs/schemas/` com JSON Schema Draft 2020-12 público de cada resposta
+- 12 suites de testes cobrindo: contrato JSON, exit codes P0, migração de schema, concorrência, property-based, sinais, i18n, segurança, benchmarks, smoke de instalado, receitas do cookbook e regressão v2.0.4
+- 4 benchmarks criterion em `benches/cli_benchmarks.rs` validando SLAs de latência
+- `proptest = { version = "1", features = ["std"] }` e `criterion = { version = "0.5", features = ["html_reports"] }` em `[dev-dependencies]`
+- `[[bench]]` com `name = "cli_benchmarks"` e `harness = false` em `Cargo.toml`
+
+
 ## [2.0.4] — 2026-04-19
 
 ### Corrigido
