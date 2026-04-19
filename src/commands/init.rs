@@ -13,6 +13,11 @@ pub struct InitArgs {
     pub model: Option<String>,
     #[arg(long)]
     pub force: bool,
+    /// Namespace inicial a resolver. Alinhado à documentação bilíngue que prevê `init --namespace`.
+    /// Se fornecido, escreve `NEUROGRAPHRAG_NAMESPACE` no arquivo `.neurographrag/config.toml`
+    /// do diretório atual; caso contrário, resolve via env ou fallback `global`.
+    #[arg(long)]
+    pub namespace: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -21,12 +26,16 @@ struct InitResponse {
     schema_version: String,
     model: String,
     dim: usize,
+    /// Namespace ativo resolvido durante a inicialização, alinhado à doc bilíngue.
+    namespace: String,
     status: String,
 }
 
 pub fn run(args: InitArgs) -> Result<(), AppError> {
     let paths = AppPaths::resolve(args.db.as_deref())?;
     paths.ensure_dirs()?;
+
+    let namespace = crate::namespace::resolve_namespace(args.namespace.as_deref())?;
 
     let mut conn = open_rw(&paths.db)?;
 
@@ -59,7 +68,10 @@ pub fn run(args: InitArgs) -> Result<(), AppError> {
         rusqlite::params![crate::constants::NEUROGRAPHRAG_VERSION],
     )?;
 
-    output::emit_progress("Initializing embedding model (may download on first run)...");
+    output::emit_progress_i18n(
+        "Initializing embedding model (may download on first run)...",
+        "Inicializando modelo de embedding (pode baixar na primeira execução)...",
+    );
 
     let embedder = crate::embedder::get_embedder(&paths.models)?;
     let test_emb = crate::embedder::embed_passage(embedder, "smoke test")?;
@@ -69,6 +81,7 @@ pub fn run(args: InitArgs) -> Result<(), AppError> {
         schema_version,
         model: "multilingual-e5-small".to_string(),
         dim: test_emb.len(),
+        namespace,
         status: "ok".to_string(),
     })?;
 

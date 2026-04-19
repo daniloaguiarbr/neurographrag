@@ -8,19 +8,33 @@ use serde::Serialize;
 pub struct StatsArgs {
     #[arg(long, env = "NEUROGRAPHRAG_DB_PATH")]
     pub db: Option<String>,
+    /// Flag explícita de saída JSON. Aceita como no-op pois o output já é JSON por default.
+    #[arg(long, default_value_t = false)]
+    pub json: bool,
 }
 
 #[derive(Serialize)]
 struct StatsResponse {
     memories: i64,
+    /// Alias de `memories` para contrato documentado em SKILL.md e AGENT_PROTOCOL.md.
+    memories_total: i64,
     entities: i64,
+    /// Alias de `entities` para contrato documentado.
+    entities_total: i64,
     relationships: i64,
+    /// Alias de `relationships` para contrato documentado.
+    relationships_total: i64,
+    /// Total de chunks indexados (linha por chunk em `memory_chunks`).
+    chunks_total: i64,
     namespaces: Vec<String>,
     db_size_bytes: u64,
+    /// Alias semântico de `db_size_bytes` para contrato documentado.
+    db_bytes: u64,
     schema_version: String,
 }
 
 pub fn run(args: StatsArgs) -> Result<(), AppError> {
+    let _ = args.json; // --json é no-op pois output já é JSON por default
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
     if !paths.db.exists() {
@@ -58,12 +72,21 @@ pub fn run(args: StatsArgs) -> Result<(), AppError> {
 
     let db_size_bytes = std::fs::metadata(&paths.db).map(|m| m.len()).unwrap_or(0);
 
+    let chunks_total: i64 = conn
+        .query_row("SELECT COUNT(*) FROM memory_chunks", [], |r| r.get(0))
+        .unwrap_or(0);
+
     output::emit_json(&StatsResponse {
         memories,
+        memories_total: memories,
         entities,
+        entities_total: entities,
         relationships,
+        relationships_total: relationships,
+        chunks_total,
         namespaces,
         db_size_bytes,
+        db_bytes: db_size_bytes,
         schema_version,
     })?;
 

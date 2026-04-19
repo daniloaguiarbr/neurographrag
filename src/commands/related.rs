@@ -16,9 +16,14 @@ type Neighbour = (i64, String, String, String, f64);
 
 #[derive(clap::Args)]
 pub struct RelatedArgs {
+    /// Nome da memória (posicional). Alternativa a `--name` para compatibilidade com doc bilíngue.
+    #[arg(value_name = "NAME", conflicts_with = "name")]
+    pub name_positional: Option<String>,
+    /// Nome da memória (flag). Obrigatório se posicional não fornecido.
     #[arg(long)]
-    pub name: String,
-    #[arg(long, default_value_t = DEFAULT_MAX_HOPS)]
+    pub name: Option<String>,
+    /// Número máximo de hops no grafo. Aceita alias `--hops` para compatibilidade com doc bilíngue.
+    #[arg(long, alias = "hops", default_value_t = DEFAULT_MAX_HOPS)]
     pub max_hops: u32,
     #[arg(long, value_enum)]
     pub relation: Option<RelationKind>,
@@ -50,6 +55,17 @@ struct RelatedMemory {
 }
 
 pub fn run(args: RelatedArgs) -> Result<(), AppError> {
+    let name = args
+        .name_positional
+        .as_deref()
+        .or(args.name.as_deref())
+        .ok_or_else(|| {
+            AppError::Validation(
+                "name required: pass as positional argument or via --name".to_string(),
+            )
+        })?
+        .to_string();
+
     let namespace = crate::namespace::resolve_namespace(args.namespace.as_deref())?;
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
@@ -66,14 +82,13 @@ pub fn run(args: RelatedArgs) -> Result<(), AppError> {
     let seed_id: i64 = match conn.query_row(
         "SELECT id FROM memories
          WHERE namespace = ?1 AND name = ?2 AND deleted_at IS NULL",
-        params![namespace, args.name],
+        params![namespace, name],
         |r| r.get(0),
     ) {
         Ok(id) => id,
         Err(rusqlite::Error::QueryReturnedNoRows) => {
             return Err(AppError::NotFound(format!(
-                "memory '{}' not found in namespace '{}'",
-                args.name, namespace
+                "memory '{name}' not found in namespace '{namespace}'"
             )));
         }
         Err(e) => return Err(AppError::Database(e)),

@@ -76,6 +76,14 @@ pub struct Cli {
     #[arg(long, global = true, hide = true, default_value_t = false)]
     pub skip_memory_guard: bool,
 
+    /// Idioma das mensagens humanas (stderr). Aceita `en` ou `pt`.
+    ///
+    /// Sem a flag, detecta via env `NEUROGRAPHRAG_LANG` e depois `LC_ALL`/`LANG`.
+    /// JSON de stdout é determinístico e idêntico entre idiomas — apenas
+    /// strings destinadas a humanos são afetadas.
+    #[arg(long, global = true, value_enum, value_name = "LANG")]
+    pub lang: Option<crate::i18n::Language>,
+
     #[command(subcommand)]
     pub command: Commands,
 }

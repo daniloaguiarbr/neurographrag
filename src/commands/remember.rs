@@ -173,7 +173,7 @@ pub fn run(args: RememberArgs) -> Result<(), AppError> {
         }
     }
 
-    output::emit_progress("Computing embedding...");
+    output::emit_progress_i18n("Computing embedding...", "Calculando embedding...");
     let embedder = crate::embedder::get_embedder(&paths.models)?;
 
     let chunks_info = chunking::split_into_chunks(&raw_body);
@@ -185,7 +185,10 @@ pub fn run(args: RememberArgs) -> Result<(), AppError> {
             crate::embedder::embed_passage(embedder, &raw_body)?,
         )
     } else {
-        output::emit_progress(&format!("Embedding {} chunks...", chunks_info.len()));
+        output::emit_progress_i18n(
+            &format!("Embedding {} chunks...", chunks_info.len()),
+            &format!("Embedando {} chunks...", chunks_info.len()),
+        );
         let texts: Vec<String> = chunks_info.iter().map(|c| c.text.clone()).collect();
         let chunk_embeddings = crate::embedder::embed_passages_batch(embedder, &texts)?;
         let aggregated = chunking::aggregate_embeddings(&chunk_embeddings);
@@ -363,17 +366,23 @@ pub fn run(args: RememberArgs) -> Result<(), AppError> {
         tx.commit()?;
     }
 
+    let created_at_epoch = chrono::Utc::now().timestamp();
+    let created_at_iso = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+
     output::emit_json(&RememberResponse {
         memory_id,
         name: args.name,
         namespace,
-        action,
+        action: action.clone(),
+        operation: action,
         version,
         entities_persisted,
         relationships_persisted,
         chunks_created,
         merged_into_memory_id: None,
         warnings,
+        created_at: created_at_epoch,
+        created_at_iso,
     })?;
 
     Ok(())

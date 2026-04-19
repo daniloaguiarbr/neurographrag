@@ -164,6 +164,8 @@ fn hybrid_search_response_shape_tem_results() {
             description: "descrição".to_string(),
             body: "corpo".to_string(),
             combined_score: 0.95,
+            score: 0.95,
+            source: "hybrid".to_string(),
             vec_rank: Some(1),
             fts_rank: Some(2),
         }],

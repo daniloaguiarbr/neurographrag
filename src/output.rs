@@ -29,18 +29,34 @@ pub fn emit_progress(msg: &str) {
     eprintln!("{msg}");
 }
 
+/// Emite mensagem de progresso bilíngue respeitando `--lang` ou `NEUROGRAPHRAG_LANG`.
+/// Uso: `output::emit_progress_i18n("Computing embedding...", "Calculando embedding...")`.
+pub fn emit_progress_i18n(en: &str, pt: &str) {
+    use crate::i18n::{current, Language};
+    match current() {
+        Language::English => eprintln!("{en}"),
+        Language::Portugues => eprintln!("{pt}"),
+    }
+}
+
 #[derive(Serialize)]
 pub struct RememberResponse {
     pub memory_id: i64,
     pub name: String,
     pub namespace: String,
     pub action: String,
+    /// Alias semântico de `action` para compatibilidade com contrato documentado em SKILL.md e AGENT_PROTOCOL.md.
+    pub operation: String,
     pub version: i64,
     pub entities_persisted: usize,
     pub relationships_persisted: usize,
     pub chunks_created: usize,
     pub merged_into_memory_id: Option<i64>,
     pub warnings: Vec<String>,
+    /// Timestamp Unix epoch seconds.
+    pub created_at: i64,
+    /// Timestamp RFC 3339 UTC string paralelo a `created_at` para parsers ISO 8601.
+    pub created_at_iso: String,
 }
 
 #[derive(Serialize, Clone)]
@@ -62,6 +78,8 @@ pub struct RecallResponse {
     pub k: usize,
     pub direct_matches: Vec<RecallItem>,
     pub graph_matches: Vec<RecallItem>,
+    /// Alias agregado de `direct_matches` + `graph_matches` para contrato documentado em SKILL.md.
+    pub results: Vec<RecallItem>,
 }
 
 #[cfg(test)]
@@ -125,18 +143,24 @@ mod tests {
             name: "teste".to_string(),
             namespace: "ns".to_string(),
             action: "created".to_string(),
+            operation: "created".to_string(),
             version: 1,
             entities_persisted: 2,
             relationships_persisted: 3,
             chunks_created: 4,
             merged_into_memory_id: None,
             warnings: vec!["aviso".to_string()],
+            created_at: 1776569715,
+            created_at_iso: "2026-04-19T03:34:15Z".to_string(),
         };
         let json = serde_json::to_string(&r).unwrap();
         assert!(json.contains("memory_id"));
         assert!(json.contains("aviso"));
         assert!(json.contains("\"namespace\""));
         assert!(json.contains("\"merged_into_memory_id\""));
+        assert!(json.contains("\"operation\""));
+        assert!(json.contains("\"created_at\""));
+        assert!(json.contains("\"created_at_iso\""));
     }
 
     #[test]
@@ -163,11 +187,13 @@ mod tests {
             k: 10,
             direct_matches: vec![],
             graph_matches: vec![],
+            results: vec![],
         };
         let json = serde_json::to_string(&resp).unwrap();
         assert!(json.contains("direct_matches"));
         assert!(json.contains("graph_matches"));
         assert!(json.contains("\"k\":"));
+        assert!(json.contains("\"results\""));
     }
 
     #[test]

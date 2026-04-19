@@ -9,9 +9,11 @@ use serde::Serialize;
 
 #[derive(clap::Args)]
 pub struct LinkArgs {
-    #[arg(long)]
+    /// Entidade de origem. Aceita alias `--source` para compatibilidade com doc bilíngue.
+    #[arg(long, alias = "source")]
     pub from: String,
-    #[arg(long)]
+    /// Entidade de destino. Aceita alias `--target` para compatibilidade com doc bilíngue.
+    #[arg(long, alias = "target")]
     pub to: String,
     #[arg(long, value_enum)]
     pub relation: RelationKind,

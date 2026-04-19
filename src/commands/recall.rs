@@ -24,6 +24,11 @@ pub struct RecallArgs {
     pub max_hops: u32,
     #[arg(long, default_value = "0.3")]
     pub min_weight: f64,
+    /// Filtrar resultados por distance máxima. Se todos os matches tiverem distance > min_distance,
+    /// comando sai com exit 4 (not found) conforme contrato documentado em AGENT_PROTOCOL.md.
+    /// Default 1.0 (desativado, mantém comportamento v2.0.0 de sempre retornar top-k).
+    #[arg(long, default_value = "1.0")]
+    pub min_distance: f32,
     #[arg(long, value_enum, default_value = "json")]
     pub format: OutputFormat,
     #[arg(long, env = "NEUROGRAPHRAG_DB_PATH")]
@@ -34,7 +39,10 @@ pub fn run(args: RecallArgs) -> Result<(), AppError> {
     let namespace = crate::namespace::resolve_namespace(args.namespace.as_deref())?;
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
-    output::emit_progress("Computing query embedding...");
+    output::emit_progress_i18n(
+        "Computing query embedding...",
+        "Calculando embedding da consulta...",
+    );
     let embedder = crate::embedder::get_embedder(&paths.models)?;
     let embedding = crate::embedder::embed_query(embedder, &args.query)?;
 
@@ -148,11 +156,31 @@ pub fn run(args: RecallArgs) -> Result<(), AppError> {
         }
     }
 
+    // Filtrar por min_distance se < 1.0 (ativado). Se nenhum hit dentro do threshold, exit 4.
+    if args.min_distance < 1.0 {
+        let has_relevant = direct_matches
+            .iter()
+            .any(|item| item.distance <= args.min_distance);
+        if !has_relevant {
+            return Err(AppError::NotFound(format!(
+                "no results within --min-distance {} for query '{}' in namespace '{}'",
+                args.min_distance, args.query, namespace
+            )));
+        }
+    }
+
+    let results: Vec<RecallItem> = direct_matches
+        .iter()
+        .cloned()
+        .chain(graph_matches.iter().cloned())
+        .collect();
+
     output::emit_json(&RecallResponse {
         query: args.query,
         k: args.k,
         direct_matches,
         graph_matches,
+        results,
     })?;
 
     Ok(())

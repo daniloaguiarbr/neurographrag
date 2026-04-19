@@ -47,6 +47,9 @@ fn main() {
 
     let cli = Cli::parse();
 
+    // Inicializar idioma global ANTES de qualquer emit_progress bilíngue.
+    neurographrag::i18n::init(cli.lang);
+
     // Validar flags antes de qualquer inicialização pesada.
     if let Err(msg) = cli.validate_flags() {
         eprintln!("erro: {msg}");

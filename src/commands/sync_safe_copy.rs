@@ -6,7 +6,8 @@ use serde::Serialize;
 
 #[derive(clap::Args)]
 pub struct SyncSafeCopyArgs {
-    #[arg(long)]
+    /// Caminho do arquivo snapshot. Aceita alias `--output` para compatibilidade com doc bilíngue.
+    #[arg(long, alias = "output")]
     pub dest: std::path::PathBuf,
     #[arg(long, env = "NEUROGRAPHRAG_DB_PATH")]
     pub db: Option<String>,
@@ -45,6 +46,15 @@ pub fn run(args: SyncSafeCopyArgs) -> Result<(), AppError> {
     drop(conn);
 
     let bytes_copied = std::fs::copy(&paths.db, &args.dest)?;
+
+    // Aplica permissões 600 no snapshot em Unix para evitar vazamento em Dropbox/NFS compartilhado.
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = std::fs::metadata(&args.dest)?.permissions();
+        perms.set_mode(0o600);
+        std::fs::set_permissions(&args.dest, perms)?;
+    }
 
     output::emit_json(&SyncSafeCopyResponse {
         source_db_path: paths.db.display().to_string(),

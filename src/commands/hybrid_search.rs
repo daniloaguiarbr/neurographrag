@@ -44,6 +44,10 @@ pub struct HybridSearchItem {
     pub description: String,
     pub body: String,
     pub combined_score: f64,
+    /// Alias de `combined_score` para contrato documentado em SKILL.md.
+    pub score: f64,
+    /// Fonte do match: sempre "hybrid" (RRF de vec + fts). Adicionado em v2.0.1.
+    pub source: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vec_rank: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -71,7 +75,10 @@ pub fn run(args: HybridSearchArgs) -> Result<(), AppError> {
     let namespace = crate::namespace::resolve_namespace(args.namespace.as_deref())?;
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
-    output::emit_progress("Calculando embedding da consulta...");
+    output::emit_progress_i18n(
+        "Computing query embedding...",
+        "Calculando embedding da consulta...",
+    );
     let embedder = crate::embedder::get_embedder(&paths.models)?;
     let embedding = crate::embedder::embed_query(embedder, &args.query)?;
 
@@ -142,6 +149,8 @@ pub fn run(args: HybridSearchArgs) -> Result<(), AppError> {
                 description: row.description,
                 body: row.body,
                 combined_score,
+                score: combined_score,
+                source: "hybrid".to_string(),
                 vec_rank: vec_rank_map.get(&memory_id).copied(),
                 fts_rank: fts_rank_map.get(&memory_id).copied(),
             })
@@ -202,6 +211,8 @@ mod testes {
             description: "desc".to_string(),
             body: "conteúdo".to_string(),
             combined_score: 0.0328,
+            score: 0.0328,
+            source: "hybrid".to_string(),
             vec_rank: Some(0),
             fts_rank: None,
         };
@@ -226,6 +237,8 @@ mod testes {
             description: "desc2".to_string(),
             body: "corpo2".to_string(),
             combined_score: 0.016,
+            score: 0.016,
+            source: "hybrid".to_string(),
             vec_rank: None,
             fts_rank: Some(1),
         };
@@ -250,6 +263,8 @@ mod testes {
             description: "desc3".to_string(),
             body: "corpo3".to_string(),
             combined_score: 0.05,
+            score: 0.05,
+            source: "hybrid".to_string(),
             vec_rank: Some(2),
             fts_rank: Some(0),
         };

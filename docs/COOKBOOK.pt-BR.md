@@ -83,20 +83,20 @@ fd -e md docs/ -0 | xargs -0 -n 1 -I{} sh -c '
 ### Solution
 ```bash
 neurographrag hybrid-search "postgres migration deadlock" \
-  --k 10 --rrf-k 60 --vec-weight 0.6 --fts-weight 0.4 --json
+  --k 10 --rrf-k 60 --weight-vec 0.6 --weight-fts 0.4 --json
 ```
 
 
 ### Explanation
 - `--rrf-k 60` é a constante de suavização Reciprocal Rank Fusion recomendada na literatura
-- `--vec-weight 0.6` pende o recall em direção à similaridade semântica com maior fidelidade
-- `--fts-weight 0.4` mantém matches exatos de palavra visíveis nos ranks fundidos do topo
+- `--weight-vec 0.6` pende o recall em direção à similaridade semântica com maior fidelidade
+- `--weight-fts 0.4` mantém matches exatos de palavra visíveis nos ranks fundidos do topo
 - JSON emite `rank_vec` e `rank_fts` por hit para agentes downstream auditarem a fusão
 - Poupa 50 por cento dos tokens contra pedir a um LLM para re-rankear após vetor puro
 
 
 ### Variants
-- Defina `--vec-weight 1.0 --fts-weight 0.0` para reproduzir um baseline `recall` puro em A/B
+- Defina `--weight-vec 1.0 --weight-fts 0.0` para reproduzir um baseline `recall` puro em A/B
 - Eleve `--k` para 50 antes de um re-ranker agent podar até os 5 hits finais
 
 
@@ -282,7 +282,7 @@ neurographrag hybrid-search "$EDITOR_CONTEXT" --k 10 --json > /tmp/ng.json
 
 ### Solution
 ```bash
-neurographrag sync-safe-copy --output ~/Dropbox/neurographrag/snapshot.sqlite
+neurographrag sync-safe-copy --dest ~/Dropbox/neurographrag/snapshot.sqlite
 ```
 
 

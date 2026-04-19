@@ -8,6 +8,9 @@ use serde::Serialize;
 pub struct MigrateArgs {
     #[arg(long, env = "NEUROGRAPHRAG_DB_PATH")]
     pub db: Option<String>,
+    /// Flag explícita de saída JSON. Aceita como no-op pois o output já é JSON por default.
+    #[arg(long, default_value_t = false)]
+    pub json: bool,
 }
 
 #[derive(Serialize)]
@@ -18,6 +21,7 @@ struct MigrateResponse {
 }
 
 pub fn run(args: MigrateArgs) -> Result<(), AppError> {
+    let _ = args.json; // --json é no-op pois output já é JSON por default
     let paths = AppPaths::resolve(args.db.as_deref())?;
     paths.ensure_dirs()?;
 

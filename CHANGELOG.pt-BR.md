@@ -8,6 +8,37 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-04-19
+
+### Adicionado
+
+- Aliases de flags para compatibilidade retroativa com a documentação bilíngue: `rename --old/--new` (aliases de `--name/--new-name`), `link/unlink --source/--target` (aliases de `--from/--to`), `related --hops` (alias de `--max-hops`), `sync-safe-copy --output` (alias de `--dest`).
+- `related` agora aceita o nome da memória como argumento posicional.
+- `--json` aceito como no-op em `health`, `stats`, `migrate`, `namespace-detect` (o output já é JSON por default).
+- Flag global `--lang en|pt` com fallback via env var `NEUROGRAPHRAG_LANG` e locale `LC_ALL`/`LANG` para mensagens de progresso no stderr.
+- Novo módulo `i18n` com enum `Language` e helpers `init`/`current`/`tr`. Helpers bilíngues em `output::emit_progress_i18n`.
+- Timestamps ISO 8601: `created_at_iso` em `RememberResponse`, `updated_at_iso` em itens de `list`, `created_at_iso`/`updated_at_iso` em `read`. Todos paralelos aos inteiros epoch existentes (sem breaking).
+- Resposta `read` agora inclui `memory_id` (alias de `id`), `type` (alias de `memory_type`), `version` (para controle otimista).
+- Itens `hybrid-search` agora incluem `score` (alias de `combined_score`) e `source: "hybrid"`.
+- Itens `list` agora incluem `memory_id` (alias de `id`).
+- Resposta `stats` agora inclui `memories_total`, `entities_total`, `relationships_total`, `chunks_total`, `db_bytes` (aliases de campos existentes) para conformidade com contrato.
+- Resposta `health` agora inclui `schema_version` no topo e `missing_entities[]` conforme PRD.
+- `RememberResponse` inclui `operation` (alias de `action`), `created_at`, `created_at_iso`.
+- `RecallResponse` inclui `results[]` (merge de `direct_matches` + `graph_matches`) conforme contrato SKILL.md.
+- Flag `init --namespace` adicionada, resolvida e ecoada em `InitResponse.namespace`.
+- Flag `recall --min-distance <float>` (default 1.0, desativada). Quando < 1.0, retorna exit 4 se todos os hits excederem o threshold.
+
+### Corrigido
+
+- Arquivos DB e snapshot criados por `open_rw` e `sync-safe-copy` agora recebem chmod 600 em Unix para prevenir vazamento em montagens compartilhadas (Dropbox, NFS, `/tmp` multi-usuário).
+- Mensagens de progresso em `remember`, `recall`, `hybrid-search`, `init` agora usam o helper bilíngue e respeitam o idioma ativo de forma consistente (antes misturavam EN/PT na mesma sessão).
+
+### Documentação
+
+- COOKBOOK, AGENT_PROTOCOL, SKILL, CLAUDE.md, README, INTEGRATIONS e llms.txt atualizados para refletir schemas reais, flags reais e exit codes reais. Validados contra o output de `--help` de cada subcomando.
+- Subcomandos `graph` e `cleanup-orphans` agora documentados nos guias apropriados.
+- Disclaimer honesto de latência adicionado: recall e hybrid-search levam ~1s por invocação no modo CLI one-shot porque o modelo fastembed recarrega a cada processo; ~8ms requer daemon (planejado para v3.0.0 Tier 4).
+
 ## [2.0.0] - 2026-04-18
 
 ### Breaking

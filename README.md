@@ -136,7 +136,7 @@ neurographrag purge --retention-days 90 --yes
 | `migrate` | `--json` | Apply pending schema migrations via `refinery` |
 | `vacuum` | `--json` | Checkpoint WAL and reclaim disk space |
 | `optimize` | `--json` | Run `PRAGMA optimize` to refresh statistics |
-| `sync-safe-copy` | `--output <path>` | Checkpoint then copy a sync-safe snapshot |
+| `sync-safe-copy` | `--dest <path>` (alias `--output`) | Checkpoint then copy a sync-safe snapshot |
 ### Memory content lifecycle
 | Command | Arguments | Description |
 | --- | --- | --- |
@@ -184,7 +184,7 @@ neurographrag hybrid-search "postgres migration" --k 10 --json \
 ```
 ### Backup with atomic snapshot and compression
 ```bash
-neurographrag sync-safe-copy --output /tmp/ng.sqlite
+neurographrag sync-safe-copy --dest /tmp/ng.sqlite
 ouch compress /tmp/ng.sqlite /tmp/ng-$(date +%Y%m%d).tar.zst
 ```
 ### Claude Code subprocess example in Node

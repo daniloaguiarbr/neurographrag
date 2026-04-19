@@ -25,6 +25,8 @@ pub struct ListArgs {
 #[derive(Serialize)]
 struct ListItem {
     id: i64,
+    /// Alias semântico de `id` para contrato documentado em SKILL.md e AGENT_PROTOCOL.md.
+    memory_id: i64,
     name: String,
     namespace: String,
     #[serde(rename = "type")]
@@ -32,6 +34,8 @@ struct ListItem {
     description: String,
     snippet: String,
     updated_at: i64,
+    /// Timestamp RFC 3339 UTC paralelo a `updated_at`.
+    updated_at_iso: String,
 }
 
 pub fn run(args: ListArgs) -> Result<(), AppError> {
@@ -46,14 +50,19 @@ pub fn run(args: ListArgs) -> Result<(), AppError> {
         .into_iter()
         .map(|r| {
             let snippet: String = r.body.chars().take(200).collect();
+            let updated_at_iso = chrono::DateTime::<chrono::Utc>::from_timestamp(r.updated_at, 0)
+                .map(|dt| dt.to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
+                .unwrap_or_else(|| "1970-01-01T00:00:00Z".to_string());
             ListItem {
                 id: r.id,
+                memory_id: r.id,
                 name: r.name,
                 namespace: r.namespace,
                 memory_type: r.memory_type,
                 description: r.description,
                 snippet,
                 updated_at: r.updated_at,
+                updated_at_iso,
             }
         })
         .collect();

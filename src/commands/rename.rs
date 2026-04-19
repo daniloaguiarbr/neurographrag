@@ -7,9 +7,11 @@ use serde::Serialize;
 
 #[derive(clap::Args)]
 pub struct RenameArgs {
-    #[arg(long)]
+    /// Nome atual da memória. Aceita alias `--old` para compatibilidade com doc bilíngue.
+    #[arg(long, alias = "old")]
     pub name: String,
-    #[arg(long)]
+    /// Novo nome da memória. Aceita alias `--new` para compatibilidade com doc bilíngue.
+    #[arg(long, alias = "new")]
     pub new_name: String,
     #[arg(long, default_value = "global")]
     pub namespace: Option<String>,

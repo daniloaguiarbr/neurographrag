@@ -8,6 +8,9 @@ use serde::Serialize;
 pub struct HealthArgs {
     #[arg(long, env = "NEUROGRAPHRAG_DB_PATH")]
     pub db: Option<String>,
+    /// Flag explícita de saída JSON. Aceita como no-op pois o output já é JSON por default.
+    #[arg(long, default_value_t = false)]
+    pub json: bool,
 }
 
 #[derive(Serialize)]
@@ -24,9 +27,15 @@ struct HealthResponse {
     integrity: String,
     counts: HealthCounts,
     db_path: String,
+    /// Versão do schema aplicado (top-level para contrato documentado em AGENT_PROTOCOL.md).
+    schema_version: String,
+    /// Lista de entidades referenciadas por memórias mas ausentes na tabela de entidades.
+    /// Vazio em DB saudável. Conforme contrato documentado em AGENT_PROTOCOL.md.
+    missing_entities: Vec<String>,
 }
 
 pub fn run(args: HealthArgs) -> Result<(), AppError> {
+    let _ = args.json; // --json é no-op pois output já é JSON por default
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
     if !paths.db.exists() {
@@ -53,6 +62,29 @@ pub fn run(args: HealthArgs) -> Result<(), AppError> {
 
     let status = if integrity == "ok" { "ok" } else { "degraded" };
 
+    let schema_version: String = conn
+        .query_row(
+            "SELECT value FROM schema_meta WHERE key='schema_version'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or_else(|_| "unknown".to_string());
+
+    // Detecta entidades órfãs referenciadas por memórias mas ausentes na tabela entities.
+    let mut missing_entities: Vec<String> = Vec::new();
+    let mut stmt = conn.prepare(
+        "SELECT DISTINCT me.entity_id
+         FROM memory_entities me
+         LEFT JOIN entities e ON e.id = me.entity_id
+         WHERE e.id IS NULL",
+    )?;
+    let orphans: Vec<i64> = stmt
+        .query_map([], |r| r.get(0))?
+        .collect::<Result<Vec<_>, _>>()?;
+    for id in orphans {
+        missing_entities.push(format!("entity_id={id}"));
+    }
+
     output::emit_json(&HealthResponse {
         status: status.to_string(),
         integrity,
@@ -63,6 +95,8 @@ pub fn run(args: HealthArgs) -> Result<(), AppError> {
             vec_memories: vec_memories_count,
         },
         db_path: paths.db.display().to_string(),
+        schema_version,
+        missing_entities,
     })?;
 
     Ok(())

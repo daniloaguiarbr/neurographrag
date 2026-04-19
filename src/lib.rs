@@ -70,6 +70,9 @@ pub mod errors;
 /// Graph traversal helpers over the entities and relationships tables.
 pub mod graph;
 
+/// Bilingual message layer for human-facing stderr progress (`--lang en|pt`, `NEUROGRAPHRAG_LANG`).
+pub mod i18n;
+
 /// Semáforo de contagem via lock files para limitar invocações paralelas (veja [`lock::acquire_cli_slot`]).
 pub mod lock;
 

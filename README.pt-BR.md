@@ -136,7 +136,7 @@ neurographrag purge --retention-days 90 --yes
 | `migrate` | `--json` | Aplica migrações pendentes via `refinery` |
 | `vacuum` | `--json` | Faz checkpoint do WAL e libera espaço |
 | `optimize` | `--json` | Executa `PRAGMA optimize` para atualizar estatísticas |
-| `sync-safe-copy` | `--output <caminho>` | Gera cópia segura para sincronização em nuvem |
+| `sync-safe-copy` | `--dest <caminho>` (alias `--output`) | Gera cópia segura para sincronização em nuvem |
 ### Ciclo de vida do conteúdo de memória
 | Comando | Argumentos | Descrição |
 | --- | --- | --- |
@@ -184,7 +184,7 @@ neurographrag hybrid-search "migração postgres" --k 10 --json \
 ```
 ### Backup com snapshot atômico e compressão
 ```bash
-neurographrag sync-safe-copy --output /tmp/ng.sqlite
+neurographrag sync-safe-copy --dest /tmp/ng.sqlite
 ouch compress /tmp/ng.sqlite /tmp/ng-$(date +%Y%m%d).tar.zst
 ```
 ### Exemplo de subprocesso no Claude Code em Node

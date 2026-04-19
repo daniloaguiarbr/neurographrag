@@ -123,7 +123,7 @@ find ./docs -name "*.md" -print0 \
 
 ### Receita Quatro — Sincronização Segura Com Dropbox ou iCloud
 ```bash
-neurographrag sync-safe-copy --output ~/Dropbox/neurographrag.sqlite
+neurographrag sync-safe-copy --dest ~/Dropbox/neurographrag.sqlite
 ouch compress ~/Dropbox/neurographrag.sqlite ~/Dropbox/neurographrag-$(date +%Y%m%d).tar.zst
 ```
 - `sync-safe-copy` faz checkpoint do WAL e copia snapshot consistente atomicamente

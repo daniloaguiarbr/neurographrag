@@ -1,6 +1,6 @@
 [package]
 name = "neurographrag"
-version = "2.0.0"
+version = "2.0.1"
 edition = "2021"
 rust-version = "1.88"
 description = "Local GraphRAG memory for LLMs in a single SQLite file"
@@ -60,6 +60,7 @@ regex = "1"
 toml = "0.8"
 tokio = { version = "1", features = ["full"] }
 zerocopy = { version = "0.7", features = ["derive"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
 sysinfo = { version = "0.32", default-features = false, features = ["system"] }
 ctrlc = { version = "3.4", features = ["termination"] }
 # Pin preventivo — constant_time_eq 0.4.3 bumped MSRV para 1.95.0 em versão patch.
