@@ -30,6 +30,31 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/spec
 - Toda a documentação agora segue docs_rules/rules_rust_documentacao.md
 
 
+## [2.0.4] — 2026-04-19
+
+### Corrigido
+- `--expected-updated-at` agora aceita tanto Unix epoch inteiro quanto string RFC 3339 via parser duplo em src/parsers/mod.rs — aplicado em edit, rename, restore, remember (GAP 1 CRITICAL)
+- `entities-file` agora aceita o campo `"type"` como alias de `"entity_type"` via `#[serde(alias = "type")]` — elimina erro 422 em payloads válidos de agentes (GAP 12 HIGH)
+- Mensagens internas de validação agora localizadas EN/PT via módulo `i18n::validacao` — 7 funções cobrindo comprimento do nome, nome reservado, kebab-case, comprimento de descrição, comprimento de body (GAP 13 MEDIUM)
+- Flag `purge --yes` aceita silenciosamente como no-op para compatibilidade com exemplos documentados (GAP 19 MEDIUM)
+- Resposta JSON de `link` agora duplica `from` como `source` e `to` como `target` — zero breaking change, adiciona aliases esperados (GAP 20 MEDIUM)
+- Objetos de nó em `graph` agora duplicam `kind` como `type` via `#[serde(rename = "type")]` em graph_export.rs — zero breaking change (GAP 21 LOW)
+- Registros de versão de `history` agora incluem campo `created_at_iso` RFC 3339 paralelo ao `created_at` Unix existente (GAP 24 LOW)
+
+### Adicionado
+- Schema JSON de `health` expandido conforme spec completa do PRD: +db_size_bytes, +integrity_ok, +schema_ok, +vec_memories_ok, +vec_entities_ok, +vec_chunks_ok, +fts_ok, +model_ok, +checks[] com 7 entradas (GAP 4 HIGH)
+- Resposta JSON de `recall` agora inclui `elapsed_ms: u64` medido via Instant (GAP 8 HIGH)
+- Resposta JSON de `hybrid-search` agora inclui `elapsed_ms: u64`, `rrf_k: u32` e `weights: {vec, fts}` (GAPs 8+10 HIGH)
+- Módulo de validação i18n `src/i18n/validacao.rs` — todas as 7 mensagens de erro de validação disponíveis em EN e PT
+- Parser de timestamp duplo `src/parsers/mod.rs` — aceita Unix epoch i64 e RFC 3339 via `chrono::DateTime::parse_from_rfc3339`
+
+### Alterado
+- Varredura de docs EN (T9): schemas de recall, hybrid-search, list, health, stats alinhados com saída real do binário; pesos corrigidos 0.6/0.4 → 1.0/1.0; namespace padrão documentado como `global`; alias `--json` no-op documentado; `related` documentado para receber nome da memória e não ID
+- Varredura de docs PT (T10): COOKBOOK.pt-BR.md, CROSS_PLATFORM.pt-BR.md, AGENTS.pt-BR.md, README.pt-BR.md, skill/neurographrag-pt/SKILL.md, llms.pt-BR.txt alinhados espelhando as correções EN do T9
+- 18 arquivos-fonte binário atualizados; 1 arquivo novo criado (src/parsers/mod.rs)
+- 283 testes PASS, zero warnings de clippy, zero erros de check após alterações no binário
+
+
 ## [2.0.3] - 2026-04-19
 
 ### Adicionado

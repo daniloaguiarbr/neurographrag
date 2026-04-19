@@ -16,7 +16,7 @@ pub struct RenameArgs {
     #[arg(long, default_value = "global")]
     pub namespace: Option<String>,
     /// Optimistic locking: rejeitar se updated_at atual não bater (exit 3).
-    #[arg(long, value_name = "EPOCH")]
+    #[arg(long, value_name = "EPOCH", value_parser = crate::parsers::parse_expected_updated_at)]
     pub expected_updated_at: Option<i64>,
     /// Session ID opcional para rastrear origem da mudança.
     #[arg(long, value_name = "UUID")]
@@ -42,24 +42,23 @@ pub fn run(args: RenameArgs) -> Result<(), AppError> {
 
     if args.new_name.starts_with("__") {
         return Err(AppError::Validation(
-            "names and namespaces starting with __ are reserved for internal use".to_string(),
+            crate::i18n::validacao::nome_reservado(),
         ));
     }
 
     if args.new_name.is_empty() || args.new_name.len() > MAX_MEMORY_NAME_LEN {
-        return Err(AppError::Validation(format!(
-            "new-name must be 1-{MAX_MEMORY_NAME_LEN} chars"
-        )));
+        return Err(AppError::Validation(
+            crate::i18n::validacao::novo_nome_comprimento(MAX_MEMORY_NAME_LEN),
+        ));
     }
 
     {
         let slug_re = regex::Regex::new(crate::constants::NAME_SLUG_REGEX)
             .map_err(|e| AppError::Internal(anyhow::anyhow!("regex: {e}")))?;
         if !slug_re.is_match(&args.new_name) {
-            return Err(AppError::Validation(format!(
-                "new-name must be kebab-case slug (lowercase letters, digits, hyphens): '{}'",
-                args.new_name
-            )));
+            return Err(AppError::Validation(
+                crate::i18n::validacao::novo_nome_kebab(&args.new_name),
+            ));
         }
     }
 

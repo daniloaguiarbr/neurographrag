@@ -174,7 +174,7 @@ neurographrag purge --retention-days 90 --yes
 | --- | --- | --- | --- |
 | `NEUROGRAPHRAG_DB_PATH` | Caminho absoluto para o arquivo SQLite | Diretório XDG data | `/dados/graph.sqlite` |
 | `NEUROGRAPHRAG_CACHE_DIR` | Diretório para cache do modelo de embedding | Diretório XDG cache | `~/.cache/neurographrag` |
-| `NEUROGRAPHRAG_LANG` | Idioma da saída da CLI como `en` ou `pt` | `en` | `pt` |
+| `NEUROGRAPHRAG_LANG` | Idioma da saída da CLI como `en` ou `pt` (alias: `pt-BR`, `portuguese`) | `en` | `pt` |
 | `NEUROGRAPHRAG_LOG_LEVEL` | Nível do filtro de tracing para saída em stderr | `info` | `debug` |
 | `NEUROGRAPHRAG_NAMESPACE` | Override de namespace ignorando detecção | nenhum | `projeto-foo` |
 
@@ -256,7 +256,7 @@ RUN cargo install --locked neurographrag
 - Banco travado após crash exige `neurographrag vacuum` para fazer checkpoint do WAL
 - Primeiro `init` leva cerca de um minuto enquanto `fastembed` baixa o modelo quantizado
 - Permissão negada no Linux indica falta de escrita no diretório de cache do usuário
-- Detecção de namespace cai para `default` quando não há marcador `.neurographrag`
+- Detecção de namespace cai para `global` quando não há marcador `.neurographrag`
 - Invocações paralelas acima de quatro slots recebem saída 75 e DEVEM tentar com backoff
 
 

@@ -15,7 +15,7 @@ pub struct RestoreArgs {
     #[arg(long, default_value = "global")]
     pub namespace: Option<String>,
     /// Optimistic locking: rejeitar se updated_at atual não bater (exit 3).
-    #[arg(long, value_name = "EPOCH")]
+    #[arg(long, value_name = "EPOCH", value_parser = crate::parsers::parse_expected_updated_at)]
     pub expected_updated_at: Option<i64>,
     /// Formato da saída.
     #[arg(long, value_enum, default_value_t = crate::output::OutputFormat::Json)]

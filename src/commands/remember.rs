@@ -39,7 +39,7 @@ pub struct RememberArgs {
     pub metadata_file: Option<std::path::PathBuf>,
     #[arg(long)]
     pub force_merge: bool,
-    #[arg(long)]
+    #[arg(long, value_parser = crate::parsers::parse_expected_updated_at)]
     pub expected_updated_at: Option<i64>,
     #[arg(long)]
     pub skip_extraction: bool,
@@ -65,14 +65,14 @@ pub fn run(args: RememberArgs) -> Result<(), AppError> {
     let namespace = crate::namespace::resolve_namespace(args.namespace.as_deref())?;
 
     if args.name.is_empty() || args.name.len() > MAX_MEMORY_NAME_LEN {
-        return Err(AppError::Validation(format!(
-            "name must be 1-{MAX_MEMORY_NAME_LEN} chars"
-        )));
+        return Err(AppError::Validation(
+            crate::i18n::validacao::nome_comprimento(MAX_MEMORY_NAME_LEN),
+        ));
     }
 
     if args.name.starts_with("__") {
         return Err(AppError::Validation(
-            "names and namespaces starting with __ are reserved for internal use".to_string(),
+            crate::i18n::validacao::nome_reservado(),
         ));
     }
 
@@ -80,17 +80,16 @@ pub fn run(args: RememberArgs) -> Result<(), AppError> {
         let slug_re = regex::Regex::new(crate::constants::NAME_SLUG_REGEX)
             .map_err(|e| AppError::Internal(anyhow::anyhow!("regex: {e}")))?;
         if !slug_re.is_match(&args.name) {
-            return Err(AppError::Validation(format!(
-                "name must be kebab-case slug (lowercase letters, digits, hyphens): '{}'",
-                args.name
+            return Err(AppError::Validation(crate::i18n::validacao::nome_kebab(
+                &args.name,
             )));
         }
     }
 
     if args.description.len() > MAX_MEMORY_DESCRIPTION_LEN {
-        return Err(AppError::Validation(format!(
-            "description must be <= {MAX_MEMORY_DESCRIPTION_LEN} chars"
-        )));
+        return Err(AppError::Validation(
+            crate::i18n::validacao::descricao_excede(MAX_MEMORY_DESCRIPTION_LEN),
+        ));
     }
 
     let mut raw_body = if let Some(b) = args.body {
@@ -137,9 +136,9 @@ pub fn run(args: RememberArgs) -> Result<(), AppError> {
     }
 
     if raw_body.len() > MAX_MEMORY_BODY_LEN {
-        return Err(AppError::LimitExceeded(format!(
-            "body exceeds {MAX_MEMORY_BODY_LEN} chars"
-        )));
+        return Err(AppError::LimitExceeded(
+            crate::i18n::validacao::body_excede(MAX_MEMORY_BODY_LEN),
+        ));
     }
 
     let metadata: serde_json::Value = if let Some(m) = args.metadata {

@@ -80,6 +80,8 @@ pub struct RecallResponse {
     pub graph_matches: Vec<RecallItem>,
     /// Alias agregado de `direct_matches` + `graph_matches` para contrato documentado em SKILL.md.
     pub results: Vec<RecallItem>,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    pub elapsed_ms: u64,
 }
 
 #[cfg(test)]
@@ -188,12 +190,14 @@ mod tests {
             direct_matches: vec![],
             graph_matches: vec![],
             results: vec![],
+            elapsed_ms: 42,
         };
         let json = serde_json::to_string(&resp).unwrap();
         assert!(json.contains("direct_matches"));
         assert!(json.contains("graph_matches"));
         assert!(json.contains("\"k\":"));
         assert!(json.contains("\"results\""));
+        assert!(json.contains("\"elapsed_ms\""));
     }
 
     #[test]

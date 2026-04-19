@@ -215,7 +215,7 @@ RUN cargo install --locked neurographrag
   "query": "postgres migration",
   "k": 5,
   "rrf_k": 60,
-  "weights": { "vec": 0.6, "fts": 0.4 },
+  "weights": { "vec": 1.0, "fts": 1.0 },
   "elapsed_ms": 18,
   "results": [
     { "name": "postgres-migration-plan", "score": 0.96, "vec_rank": 1, "fts_rank": 1 },
@@ -406,7 +406,7 @@ neurographrag purge --retention-days 90 --yes
 ### Export Memories To NDJSON For Backup
 ```bash
 neurographrag list --limit 1000 --json \
-  | jaq -c '.memories[]' \
+  | jaq -c '.[]' \
   > memories-backup-$(date +%Y%m%d).ndjson
 ```
 - One line per memory in NDJSON format for streaming ingestion by any tool

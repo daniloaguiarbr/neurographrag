@@ -29,14 +29,14 @@
 ### Solution
 ```bash
 cargo install --locked neurographrag
-neurographrag init --namespace default
+neurographrag init --namespace global
 neurographrag health --json
 ```
 
 
 ### Explanation
 - Comando `init` cria o arquivo SQLite e baixa `multilingual-e5-small` localmente
-- Flag `--namespace default` fixa o escopo inicial para seus agentes concordarem no alvo
+- Flag `--namespace global` fixa o escopo inicial para seus agentes concordarem no alvo
 - Comando `health` valida a integridade com `PRAGMA integrity_check` devolvendo JSON
 - Exit code `0` sinaliza que o banco está pronto para leitura e escrita por qualquer agente
 - Poupa 30 minutos por laptop contra bootstrap Pinecone mais Docker mais Python
@@ -97,14 +97,14 @@ fd -e md docs/ -0 | xargs -0 -n 1 -I{} sh -c '
 ### Solution
 ```bash
 neurographrag hybrid-search "postgres migration deadlock" \
-  --k 10 --rrf-k 60 --weight-vec 0.6 --weight-fts 0.4 --json
+  --k 10 --rrf-k 60 --weight-vec 1.0 --weight-fts 1.0 --json
 ```
 
 
 ### Explanation
 - `--rrf-k 60` é a constante de suavização Reciprocal Rank Fusion recomendada na literatura
-- `--weight-vec 0.6` pende o recall em direção à similaridade semântica com maior fidelidade
-- `--weight-fts 0.4` mantém matches exatos de palavra visíveis nos ranks fundidos do topo
+- `--weight-vec 1.0` e `--weight-fts 1.0` são os padrões — ambas as fontes têm peso igual
+- Ajuste os pesos apenas para tradeoffs explícitos entre semântica e precisão de tokens
 - JSON emite `vec_rank` e `fts_rank` por resultado para agentes downstream auditarem a fusão
 - Poupa 50 por cento dos tokens contra pedir a um LLM para re-rankear após vetor puro
 
@@ -158,7 +158,7 @@ neurographrag related authentication-flow --hops 2 --json
 ### Solution
 ```bash
 # .claude/hooks/pre-task.sh
-CONTEXT=$(neurographrag recall "$USER_PROMPT" --k 5 --json)
+CONTEXT=$(neurographrag recall "$USER_PROMPT" --k 5 --format json)
 printf 'Relevant memories:\n%s\n' "$CONTEXT"
 
 # .claude/hooks/post-task.sh
@@ -369,13 +369,13 @@ jobs:
 ### Solution
 ```bash
 neurographrag list --limit 10000 --json \
-  | jaq -c '.memories[]' > memories-$(date +%Y%m%d).ndjson
+  | jaq -c '.[]' > memories-$(date +%Y%m%d).ndjson
 ```
 
 
 ### Explanation
 - `list --limit 10000` enumera memórias até o teto com ordenação determinística estável
-- `jaq -c '.memories[]'` achata o array em NDJSON legível por qualquer ferramenta instantaneamente
+- `jaq -c '.[]'` achata o array direto em NDJSON legível por qualquer ferramenta instantaneamente
 - Arquivo resultante abre em `rg` `bat` ou planilhas sem conhecimento de SQLite algum
 - Diff dois snapshots com `difft` para auditar o que mudou entre backups mensais limpo
 - Poupa tempo do auditor porque NDJSON é legível por humano ao contrário de binário opaco

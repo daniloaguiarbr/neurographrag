@@ -79,7 +79,7 @@ neurographrag hybrid-search "postgres migration strategy" \
   --weight-vec 0.7 \
   --weight-fts 0.3 \
   --json \
-  | jaq '.hits[] | {name, score, source}'
+  | jaq '.results[] | {name, score, source}'
 ```
 - Combines dense vector similarity and sparse full-text matches in one ranked list
 - Weight tuning lets you favor semantic proximity against keyword precision per query
@@ -133,7 +133,7 @@ ouch compress ~/Dropbox/neurographrag.sqlite ~/Dropbox/neurographrag-$(date +%Y%
 ```bash
 neurographrag recall "$USER_QUERY" --k 5 --json \
   | jaq -c '{
-      context: [.hits[] | {name, body, score}],
+      context: [.results[] | {name, body, score}],
       generated_at: now | todate
     }' \
   | claude --print "Use this context to answer: $USER_QUERY"
@@ -146,22 +146,33 @@ neurographrag recall "$USER_QUERY" --k 5 --json \
 
 
 ## Configuration and Namespace Notes
-### Namespace Default — GAP 16
+### Namespace Default
 - Default namespace is `global` when `--namespace` is omitted
 - Configure via `NEUROGRAPHRAG_NAMESPACE` env var to override globally
 - Use `namespace-detect` to inspect the resolved namespace before running bulk operations
 
-### Score Semantics — GAP 17
-- JSON output uses `distance` field (cosine distance, lower is more relevant)
-- Text and markdown formats expose `score = 1 - distance` (higher is better)
-- Always prefer `--json` in pipelines to get raw `distance` for precise filtering
+### Score Semantics
+- JSON output uses `score` field (cosine similarity, higher is more relevant)
+- Results are sorted by `score` descending so the best match always appears first
+- Always prefer `--json` in pipelines to get the raw `score` for precise filtering
 
-### DB Path Discovery — GAP 25
+### Language Flag Aliases
+- `--lang en` forces English output regardless of system locale
+- `--lang pt`, `--lang pt-BR`, `--lang portuguese`, and `--lang PT` all force Portuguese
+- Env var `NEUROGRAPHRAG_LANG=pt` overrides system locale when `--lang` is absent
+- All aliases resolve to the same two internal variants: English and Portuguese
+
+### JSON Output Flag
+- `--json` is accepted by every subcommand as a no-op alias for `--format json`
+- Canonical form is `--format json`; both forms produce identical output
+- Use `--json` in pipelines for brevity; use `--format json` in config files for clarity
+
+### DB Path Discovery
 - All commands accept `--db <PATH>` flag in addition to `NEUROGRAPHRAG_DB_PATH` env var
 - CLI flag takes precedence over environment variable
 - Use `--db` when operating multiple isolated databases in parallel processes
 
-### Concurrency Cap — GAP 27
+### Concurrency Cap
 - `--max-concurrency` is capped at `2×nCPUs`; higher values return exit 2
 - Exit code 2 signals invalid argument; reduce the value and retry immediately
 - Default of 4 slots is optimal for most laptops running two to four cores
@@ -233,7 +244,7 @@ neurographrag namespace-detect
 neurographrag namespace-detect --namespace my-project
 ```
 - Prerequisites: none — works without a database present
-- Output JSON with fields `namespace` (resolved value) and `source` (flag, env, or auto)
+- Output JSON with fields `namespace`, `source`, `cwd`, `project_config_path`, and `projects_mapping_path`
 - Precedence order: `--namespace` flag > `NEUROGRAPHRAG_NAMESPACE` env > auto-detect
 - Exit code 0: resolution succeeded
 
@@ -278,17 +289,39 @@ neurographrag unlink --source auth-design --target jwt-spec --relation depends-o
 
 
 ## Additional Notes on Core Commands
-### Note on link — GAP 9
+### Note on link
 - Prerequisite: entities must exist in the graph before creating explicit links
 - The `remember` command auto-extracts entities from the `--body` text during ingestion
 - Create the memories that reference the entities first, then call `link` to type the edges
+- Use `--from`/`--source` and `--to`/`--target` interchangeably (aliases from v2.0.1)
+- JSON output: `{action, from, source, to, target, relation, weight, namespace}`
+- Both `from` and `source` carry the same value; both `to` and `target` carry the same value
 ```bash
 neurographrag remember --name auth-design --type decision --description "..." --body "Uses JWT and OAuth2."
 neurographrag remember --name jwt-spec --type reference --description "..." --body "RFC 7519 defines JWT."
 neurographrag link --from auth-design --to jwt-spec --relation depends-on
 ```
 
-### Note on remember — GAP 18
+### Note on forget
+- `forget` performs a soft delete; the memory disappears from `recall` and `list` results
+- JSON output: `{forgotten, name, namespace}`
+- Run `purge` later to hard-delete soft-deleted rows and reclaim disk space
+
+### Note on optimize and migrate
+- `optimize --json` returns `{db_path, status}`
+- `migrate --json` returns `{db_path, schema_version, status}`
+- Run `migrate` after every binary upgrade to apply pending schema changes safely
+
+### Note on cleanup-orphans
+- JSON output: `{orphan_count, deleted, dry_run, namespace}`
+- Run `--dry-run` first to confirm the count before passing `--yes` in automation
+
+### Note on graph nodes schema
+- `graph --format json` emits `{"nodes": [...], "edges": [...]}`
+- Node fields: `{id, name, namespace, kind, type}` where `kind` and `type` carry the same value
+- Edge fields mirror the `link` schema with `from`, `source`, `to`, `target`, `relation`, `weight`
+
+### Note on remember
 - `--force-merge` updates an existing memory body instead of returning exit code 2 on duplicate name
 - Use `--force-merge` in idempotent pipeline loops where the same key may appear multiple times
 ```bash

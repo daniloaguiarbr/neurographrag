@@ -57,15 +57,29 @@ pub struct HybridSearchItem {
     pub fts_rank: Option<usize>,
 }
 
+/// Pesos RRF usados na busca híbrida: vec (vetorial) e fts (texto).
+#[derive(serde::Serialize)]
+pub struct Weights {
+    pub vec: f32,
+    pub fts: f32,
+}
+
 #[derive(serde::Serialize)]
 pub struct HybridSearchResponse {
     pub query: String,
     pub k: usize,
+    /// Parâmetro k do RRF usado no ranking combinado.
+    pub rrf_k: u32,
+    /// Pesos aplicados às fontes vec e fts no RRF.
+    pub weights: Weights,
     pub results: Vec<HybridSearchItem>,
     pub graph_matches: Vec<RecallItem>,
+    /// Tempo total de execução em milissegundos desde início do handler até serialização.
+    pub elapsed_ms: u64,
 }
 
 pub fn run(args: HybridSearchArgs) -> Result<(), AppError> {
+    let start = std::time::Instant::now();
     match args.format {
         OutputFormat::Text | OutputFormat::Markdown => {
             return Err(AppError::Validation(
@@ -163,8 +177,14 @@ pub fn run(args: HybridSearchArgs) -> Result<(), AppError> {
     output::emit_json(&HybridSearchResponse {
         query: args.query,
         k: args.k,
+        rrf_k: args.rrf_k,
+        weights: Weights {
+            vec: args.weight_vec,
+            fts: args.weight_fts,
+        },
         results,
         graph_matches: vec![],
+        elapsed_ms: start.elapsed().as_millis() as u64,
     })?;
 
     Ok(())
@@ -174,14 +194,29 @@ pub fn run(args: HybridSearchArgs) -> Result<(), AppError> {
 mod testes {
     use super::*;
 
-    #[test]
-    fn hybrid_search_response_vazia_serializa_campos_corretos() {
-        let resp = HybridSearchResponse {
+    fn resposta_vazia(
+        k: usize,
+        rrf_k: u32,
+        weight_vec: f32,
+        weight_fts: f32,
+    ) -> HybridSearchResponse {
+        HybridSearchResponse {
             query: "busca teste".to_string(),
-            k: 10,
+            k,
+            rrf_k,
+            weights: Weights {
+                vec: weight_vec,
+                fts: weight_fts,
+            },
             results: vec![],
             graph_matches: vec![],
-        };
+            elapsed_ms: 0,
+        }
+    }
+
+    #[test]
+    fn hybrid_search_response_vazia_serializa_campos_corretos() {
+        let resp = resposta_vazia(10, 60, 1.0, 1.0);
         let json = serde_json::to_string(&resp).unwrap();
         assert!(json.contains("\"results\""), "deve conter campo results");
         assert!(json.contains("\"query\""), "deve conter campo query");
@@ -202,6 +237,36 @@ mod testes {
             !json.contains("\"fts_rank_list\""),
             "NÃO deve conter fts_rank_list"
         );
+    }
+
+    #[test]
+    fn hybrid_search_response_serializa_rrf_k_e_weights() {
+        let resp = resposta_vazia(5, 60, 0.7, 0.3);
+        let json = serde_json::to_string(&resp).unwrap();
+        assert!(json.contains("\"rrf_k\""), "deve conter campo rrf_k");
+        assert!(json.contains("\"weights\""), "deve conter campo weights");
+        assert!(json.contains("\"vec\""), "deve conter campo weights.vec");
+        assert!(json.contains("\"fts\""), "deve conter campo weights.fts");
+    }
+
+    #[test]
+    fn hybrid_search_response_serializa_elapsed_ms() {
+        let mut resp = resposta_vazia(5, 60, 1.0, 1.0);
+        resp.elapsed_ms = 123;
+        let json = serde_json::to_string(&resp).unwrap();
+        assert!(
+            json.contains("\"elapsed_ms\""),
+            "deve conter campo elapsed_ms"
+        );
+        assert!(json.contains("123"), "deve serializar valor de elapsed_ms");
+    }
+
+    #[test]
+    fn weights_struct_serializa_corretamente() {
+        let w = Weights { vec: 0.6, fts: 0.4 };
+        let json = serde_json::to_string(&w).unwrap();
+        assert!(json.contains("\"vec\""));
+        assert!(json.contains("\"fts\""));
     }
 
     #[test]
@@ -280,12 +345,7 @@ mod testes {
 
     #[test]
     fn hybrid_search_response_serializa_k_corretamente() {
-        let resp = HybridSearchResponse {
-            query: "q".to_string(),
-            k: 5,
-            results: vec![],
-            graph_matches: vec![],
-        };
+        let resp = resposta_vazia(5, 60, 1.0, 1.0);
         let json = serde_json::to_string(&resp).unwrap();
         assert!(json.contains("\"k\":5"), "deve serializar k=5");
     }

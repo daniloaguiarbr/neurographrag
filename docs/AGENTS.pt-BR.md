@@ -414,7 +414,7 @@ let output = Command::new("neurographrag")
 - Stdin aceita body puro quando `--body-stdin` está ativo em `remember` ou `edit`
 - Stdin aceita payload JSON quando `--payload-stdin` está ativo em modos batch
 - Variáveis de ambiente sobrescrevem defaults sem mutar o arquivo do banco de dados
-- Idioma é controlado por `--lang en` ou `--lang pt` para saída determinística
+- Idioma é controlado por `--lang <en|pt|pt-BR|portuguese|PT|pt-br>` para saída determinística
 
 
 ### Saída — Documentos JSON Determinísticos
@@ -452,7 +452,7 @@ let output = Command::new("neurographrag")
 {
   "query": "graphrag retrieval",
   "k": 3,
-  "namespace": "default",
+  "namespace": "global",
   "elapsed_ms": 12,
   "results": [
     { "name": "graphrag-intro", "score": 0.91, "type": "user", "updated_at": "2026-04-18T12:00:00Z" },
@@ -469,7 +469,7 @@ let output = Command::new("neurographrag")
   "query": "postgres migration",
   "k": 5,
   "rrf_k": 60,
-  "weights": { "vec": 0.6, "fts": 0.4 },
+  "weights": { "vec": 1.0, "fts": 1.0 },
   "elapsed_ms": 18,
   "results": [
     { "name": "postgres-migration-plan", "score": 0.96, "vec_rank": 1, "fts_rank": 1 },
@@ -508,7 +508,7 @@ let output = Command::new("neurographrag")
 ## Controle De Idioma
 ### Saída Bilíngue — Uma Flag Troca O Locale
 - Flag `--lang en` força mensagens em inglês independentemente do locale do sistema
-- Flag `--lang pt` força mensagens em português independentemente do locale do sistema
+- Flag `--lang pt` (também `pt-BR`, `portuguese`, `PT`, `pt-br`) força mensagens em português
 - Env `NEUROGRAPHRAG_LANG=pt` sobrescreve locale do sistema quando falta `--lang`
 - Sem flag e sem env cai no fallback por `sys_locale::get_locale()` do runtime
 - Locales desconhecidos caem em inglês sem emitir warning algum no stderr

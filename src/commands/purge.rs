@@ -20,6 +20,9 @@ pub struct PurgeArgs {
     /// Não executa DELETE: calcula e reporta o que SERIA purgado.
     #[arg(long, default_value_t = false)]
     pub dry_run: bool,
+    /// Compatibilidade com ferramentas que passam --yes para confirmar operações destrutivas.
+    #[arg(long, hide = true, default_value_t = false)]
+    pub yes: bool,
     #[arg(long, env = "NEUROGRAPHRAG_DB_PATH")]
     pub db: Option<String>,
 }

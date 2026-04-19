@@ -150,12 +150,14 @@ fn purge_retention_days_padrao_90() {
 
 #[test]
 fn hybrid_search_response_shape_tem_results() {
-    use neurographrag::commands::hybrid_search::{HybridSearchItem, HybridSearchResponse};
+    use neurographrag::commands::hybrid_search::{HybridSearchItem, HybridSearchResponse, Weights};
     use neurographrag::output::RecallItem;
-
     let resp = HybridSearchResponse {
         query: "consulta de teste".to_string(),
         k: 5,
+        rrf_k: 60,
+        weights: Weights { vec: 1.0, fts: 1.0 },
+        elapsed_ms: 0,
         results: vec![HybridSearchItem {
             memory_id: 1,
             name: "mem-1".to_string(),

@@ -70,12 +70,12 @@ description: Use this skill WHENEVER the user asks about adding persistent memor
 
 ## Schema
 - `remember --json` returns `{memory_id, version, namespace, operation, created_at}`.
-- `recall --json` returns `{query, results[{memory_id, score, snippet, version}]}`.
-- `hybrid-search --json` returns `{query, k, results[{memory_id, score, source}]}`.
-- `list --json` returns `{items[{memory_id, name, type, namespace, updated_at}]}`.
+- `recall --json` returns `{query, k, direct_matches, graph_matches, results[{memory_id, name, namespace, type, description, snippet, distance, source}], elapsed_ms}`.
+- `hybrid-search --json` returns `{query, k, rrf_k, weights:{vec,fts}, results[{memory_id, name, namespace, type, description, body, combined_score, score, source, vec_rank, fts_rank}], graph_matches, elapsed_ms}`.
+- `list --json` returns a root JSON array of `[{memory_id, id, name, namespace, type, description, snippet, updated_at, updated_at_iso}]`.
 - `read --json` returns `{memory_id, name, type, body, version, created_at, updated_at}`.
-- `health --json` returns `{status, integrity, schema_version, missing_entities}`.
-- `stats --json` returns `{memories_total, entities_total, chunks_total, db_bytes}`.
+- `health --json` returns `{integrity, wal_size_mb, journal_mode, db_size_bytes, integrity_ok, wal_ok}`.
+- `stats --json` returns `{memories, memories_total, entities, entities_total, relationships, relationships_total, edges, chunks_total, avg_body_len, namespaces, db_size_bytes, db_bytes, schema_version}`.
 
 
 ## Exit Codes

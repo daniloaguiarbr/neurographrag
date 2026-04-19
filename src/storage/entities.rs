@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct NewEntity {
     pub name: String,
+    #[serde(alias = "type")]
     pub entity_type: String,
     pub description: Option<String>,
 }
@@ -1010,5 +1011,35 @@ mod tests {
         let (_, criada) =
             create_or_fetch_relationship(&conn, "global", id_a, id_b, "uses", 0.5, None).unwrap();
         assert!(!criada, "segunda chamada deve retornar a relação existente");
+    }
+
+    // ------------------------------------------------------------------ //
+    // serde alias: campo "type" aceito como sinônimo de "entity_type"
+    // ------------------------------------------------------------------ //
+
+    #[test]
+    fn aceita_campo_type_como_alias() {
+        let json = r#"{"name": "X", "type": "concept"}"#;
+        let ent: NewEntity = serde_json::from_str(json).unwrap();
+        assert_eq!(ent.entity_type, "concept");
+    }
+
+    #[test]
+    fn aceita_campo_entity_type_canonico() {
+        let json = r#"{"name": "X", "entity_type": "concept"}"#;
+        let ent: NewEntity = serde_json::from_str(json).unwrap();
+        assert_eq!(ent.entity_type, "concept");
+    }
+
+    #[test]
+    fn ambos_campos_presentes_gera_erro_de_duplicata() {
+        // serde trata alias como nome alternativo do mesmo campo;
+        // ter entity_type e type no mesmo JSON é duplicata e deve falhar
+        let json = r#"{"name": "X", "entity_type": "A", "type": "B"}"#;
+        let resultado: Result<NewEntity, _> = serde_json::from_str(json);
+        assert!(
+            resultado.is_err(),
+            "ambos os campos no mesmo JSON é duplicata"
+        );
     }
 }

@@ -18,7 +18,7 @@ pub struct EditArgs {
     pub body_stdin: bool,
     #[arg(long)]
     pub description: Option<String>,
-    #[arg(long)]
+    #[arg(long, value_parser = crate::parsers::parse_expected_updated_at)]
     pub expected_updated_at: Option<i64>,
     #[arg(long, default_value = "global")]
     pub namespace: Option<String>,
@@ -72,18 +72,18 @@ pub fn run(args: EditArgs) -> Result<(), AppError> {
             buf
         };
         if b.len() > MAX_MEMORY_BODY_LEN {
-            return Err(AppError::LimitExceeded(format!(
-                "body exceeds {MAX_MEMORY_BODY_LEN} chars"
-            )));
+            return Err(AppError::LimitExceeded(
+                crate::i18n::validacao::body_excede(MAX_MEMORY_BODY_LEN),
+            ));
         }
         raw_body = Some(b);
     }
 
     if let Some(ref desc) = args.description {
         if desc.len() > MAX_MEMORY_DESCRIPTION_LEN {
-            return Err(AppError::Validation(format!(
-                "description exceeds {MAX_MEMORY_DESCRIPTION_LEN} chars"
-            )));
+            return Err(AppError::Validation(
+                crate::i18n::validacao::descricao_excede(MAX_MEMORY_DESCRIPTION_LEN),
+            ));
         }
     }
 

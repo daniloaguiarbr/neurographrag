@@ -394,6 +394,50 @@ fn test_purge_remove_memoria_soft_deleted() {
     assert_eq!(json["purged_count"], 1);
 }
 
+#[test]
+fn test_purge_yes_flag_e_noop() {
+    let tmp = TempDir::new().unwrap();
+    init_db(&tmp);
+
+    cmd(&tmp)
+        .args([
+            "remember",
+            "--name",
+            "purge-yes-target",
+            "--type",
+            "user",
+            "--description",
+            "alvo para teste --yes",
+            "--body",
+            "corpo yes noop",
+        ])
+        .assert()
+        .success();
+
+    cmd(&tmp)
+        .args(["forget", "--name", "purge-yes-target"])
+        .assert()
+        .success();
+
+    let output = cmd(&tmp)
+        .args([
+            "purge",
+            "--name",
+            "purge-yes-target",
+            "--retention-days",
+            "0",
+            "--yes",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(json["purged_count"], 1);
+}
+
 // ---------------------------------------------------------------------------
 // namespace-detect
 // ---------------------------------------------------------------------------

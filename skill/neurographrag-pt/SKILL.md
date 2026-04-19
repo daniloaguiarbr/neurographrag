@@ -44,7 +44,7 @@ description: Use esta skill SEMPRE que o usuário perguntar sobre adicionar mem�
 - Input `--name <slug>` aceita identificador kebab-case até 128 caracteres.
 - Input `--type <kind>` aceita `user`, `feedback`, `project` ou `reference`.
 - Input `--body <text>` aceita texto cru ou lê stdin quando usa `-` como valor.
-- Input `--lang <en|pt>` seleciona idioma do output para mensagens humanas.
+- Input `--lang <en|pt|pt-BR|portuguese|PT|pt-br>` seleciona idioma do output para mensagens humanas.
 - Output com `--json` emite `memory_id`, `version`, `namespace` e `operation`.
 - Output sem `--json` emite blocos Markdown sob títulos localizados.
 - Stdin aceita corpo quando usuário faz pipe de dados para `remember` ou `edit`.
@@ -70,12 +70,12 @@ description: Use esta skill SEMPRE que o usuário perguntar sobre adicionar mem�
 
 ## Schema
 - `remember --json` retorna `{memory_id, version, namespace, operation, created_at}`.
-- `recall --json` retorna `{query, results[{memory_id, score, snippet, version}]}`.
-- `hybrid-search --json` retorna `{query, k, results[{memory_id, score, source}]}`.
-- `list --json` retorna `{items[{memory_id, name, type, namespace, updated_at}]}`.
+- `recall --json` retorna `{query, k, namespace, elapsed_ms, results[{name, score, type, updated_at}]}`.
+- `hybrid-search --json` retorna `{query, k, rrf_k, weights, elapsed_ms, results[{name, score, vec_rank, fts_rank}]}`.
+- `list --json` retorna array direto `[{memory_id, name, type, namespace, updated_at}]`.
 - `read --json` retorna `{memory_id, name, type, body, version, created_at, updated_at}`.
-- `health --json` retorna `{status, integrity, schema_version, missing_entities}`.
-- `stats --json` retorna `{memories_total, entities_total, chunks_total, db_bytes}`.
+- `health --json` retorna `{status, integrity, wal_size_mb, journal_mode, schema_version, checks}`.
+- `stats --json` retorna `{memories, entities, edges, avg_body_len}`.
 
 
 ## Exit Codes
@@ -92,12 +92,12 @@ description: Use esta skill SEMPRE que o usuário perguntar sobre adicionar mem�
 
 ## Workflow
 - Passo 1 instale com `cargo install neurographrag` e verifique `neurographrag --version`.
-- Passo 2 inicialize com `neurographrag init --namespace default --lang pt`.
+- Passo 2 inicialize com `neurographrag init --namespace global --lang pt`.
 - Passo 3 armazene com `neurographrag remember --name ticket-42 --type user --description "contexto do ticket" --body "..."`.
 - Passo 4 recupere com `neurographrag recall "bug de autenticação" --json --k 5`.
 - Passo 5 funda com `neurographrag hybrid-search "plano de refactor" --json --k 8`.
 - Passo 6 inspecione com `neurographrag list --type user --json --limit 20`.
-- Passo 7 limpe com `neurographrag purge --older-than 90d --dry-run`.
+- Passo 7 limpe com `neurographrag purge --retention-days 90 --dry-run`.
 - Passo 8 valide com `neurographrag health --json` antes de CADA job de CI.
 
 

@@ -39,6 +39,7 @@ pub struct RecallArgs {
 }
 
 pub fn run(args: RecallArgs) -> Result<(), AppError> {
+    let start = std::time::Instant::now();
     let namespace = crate::namespace::resolve_namespace(args.namespace.as_deref())?;
     let paths = AppPaths::resolve(args.db.as_deref())?;
 
@@ -184,6 +185,7 @@ pub fn run(args: RecallArgs) -> Result<(), AppError> {
         direct_matches,
         graph_matches,
         results,
+        elapsed_ms: start.elapsed().as_millis() as u64,
     })?;
 
     Ok(())

@@ -452,13 +452,14 @@ let output = Command::new("neurographrag")
 {
   "query": "graphrag retrieval",
   "k": 3,
-  "namespace": "default",
-  "elapsed_ms": 12,
+  "direct_matches": [
+    { "memory_id": 1, "name": "graphrag-intro", "namespace": "global", "type": "user", "description": "intro doc", "snippet": "GraphRAG combines...", "distance": 0.09, "source": "vec" }
+  ],
+  "graph_matches": [],
   "results": [
-    { "name": "graphrag-intro", "score": 0.91, "type": "user", "updated_at": "2026-04-18T12:00:00Z" },
-    { "name": "vector-search-notes", "score": 0.84, "type": "project", "updated_at": "2026-04-17T08:12:03Z" },
-    { "name": "hybrid-ranker", "score": 0.77, "type": "feedback", "updated_at": "2026-04-16T21:04:55Z" }
-  ]
+    { "memory_id": 1, "name": "graphrag-intro", "namespace": "global", "type": "user", "description": "intro doc", "snippet": "GraphRAG combines...", "distance": 0.09, "source": "vec" }
+  ],
+  "elapsed_ms": 12
 }
 ```
 
@@ -469,12 +470,13 @@ let output = Command::new("neurographrag")
   "query": "postgres migration",
   "k": 5,
   "rrf_k": 60,
-  "weights": { "vec": 0.6, "fts": 0.4 },
-  "elapsed_ms": 18,
+  "weights": { "vec": 1.0, "fts": 1.0 },
   "results": [
-    { "name": "postgres-migration-plan", "score": 0.96, "vec_rank": 1, "fts_rank": 1 },
-    { "name": "db-migration-checklist", "score": 0.88, "vec_rank": 2, "fts_rank": 3 }
-  ]
+    { "memory_id": 1, "name": "postgres-migration-plan", "namespace": "global", "type": "project", "description": "migration plan", "body": "Step 1...", "combined_score": 0.96, "score": 0.96, "source": "hybrid", "vec_rank": 1, "fts_rank": 1 },
+    { "memory_id": 2, "name": "db-migration-checklist", "namespace": "global", "type": "reference", "description": "checklist", "body": "Check indexes...", "combined_score": 0.88, "score": 0.88, "source": "hybrid", "vec_rank": 2, "fts_rank": 3 }
+  ],
+  "graph_matches": [],
+  "elapsed_ms": 18
 }
 ```
 
@@ -508,10 +510,19 @@ let output = Command::new("neurographrag")
 ## Language Control
 ### Bilingual Output — One Flag Switches Locale
 - Flag `--lang en` forces English messages regardless of system locale
-- Flag `--lang pt` forces Portuguese messages regardless of system locale
+- Flag `--lang pt` or `--lang pt-BR` or `--lang portuguese` or `--lang PT` forces Portuguese
+- Short codes `en` and `pt` are the canonical forms; the longer aliases are accepted without error
 - Env `NEUROGRAPHRAG_LANG=pt` overrides system locale when `--lang` is absent
 - Missing flag and env falls back to `sys_locale::get_locale()` detection
 - Unknown locales default to English without emitting any warning to stderr
+
+
+## JSON Output Flag
+### Format — --format json and --json Are Both Accepted
+- All subcommands accept `--format json` as the primary flag for JSON output
+- Shorthand `--json` is accepted as a no-op alias on subcommands that default to JSON
+- Prefer `--format json` for strict pipelines where argument validation matters
+- Use `--json` for brevity in interactive shell sessions and quick-check commands
 
 
 ## Superpowers Summary

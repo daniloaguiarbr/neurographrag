@@ -28,6 +28,7 @@ struct HistoryVersion {
     change_reason: String,
     changed_by: Option<String>,
     created_at: i64,
+    created_at_iso: String,
 }
 
 #[derive(Serialize)]
@@ -60,6 +61,10 @@ pub fn run(args: HistoryArgs) -> Result<(), AppError> {
 
     let versions = stmt
         .query_map(params![memory_id], |r| {
+            let created_at: i64 = r.get(8)?;
+            let created_at_iso = chrono::DateTime::<chrono::Utc>::from_timestamp(created_at, 0)
+                .map(|dt| dt.to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
+                .unwrap_or_default();
             Ok(HistoryVersion {
                 version: r.get(0)?,
                 name: r.get(1)?,
@@ -69,7 +74,8 @@ pub fn run(args: HistoryArgs) -> Result<(), AppError> {
                 metadata: r.get(5)?,
                 change_reason: r.get(6)?,
                 changed_by: r.get(7)?,
-                created_at: r.get(8)?,
+                created_at,
+                created_at_iso,
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;
@@ -81,4 +87,42 @@ pub fn run(args: HistoryArgs) -> Result<(), AppError> {
     })?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod testes {
+    #[test]
+    fn epoch_zero_gera_iso_valido() {
+        let epoch: i64 = 0;
+        let iso = chrono::DateTime::<chrono::Utc>::from_timestamp(epoch, 0)
+            .map(|dt| dt.to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
+            .unwrap_or_default();
+        assert_eq!(iso, "1970-01-01T00:00:00Z");
+    }
+
+    #[test]
+    fn epoch_tipico_gera_iso_rfc3339() {
+        let epoch: i64 = 1_745_000_000;
+        let iso = chrono::DateTime::<chrono::Utc>::from_timestamp(epoch, 0)
+            .map(|dt| dt.to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
+            .unwrap_or_default();
+        assert!(!iso.is_empty(), "created_at_iso não deve ser vazio");
+        assert!(
+            iso.ends_with('Z'),
+            "created_at_iso deve terminar em Z (UTC)"
+        );
+        assert!(iso.contains('T'), "created_at_iso deve conter separador T");
+    }
+
+    #[test]
+    fn epoch_negativo_retorna_string_vazia() {
+        let epoch: i64 = i64::MIN;
+        let iso = chrono::DateTime::<chrono::Utc>::from_timestamp(epoch, 0)
+            .map(|dt| dt.to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
+            .unwrap_or_default();
+        assert_eq!(
+            iso, "",
+            "epoch inválido deve retornar string vazia via unwrap_or_default"
+        );
+    }
 }

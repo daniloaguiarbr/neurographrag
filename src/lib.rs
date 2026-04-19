@@ -85,6 +85,9 @@ pub mod namespace;
 /// Centralized stdout/stderr emitters for CLI output formatting.
 pub mod output;
 
+/// Parser de argumentos dual-format: aceita Unix epoch e RFC 3339.
+pub mod parsers;
+
 /// XDG-aware filesystem paths for the database and cache directories.
 pub mod paths;
 

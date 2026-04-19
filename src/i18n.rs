@@ -68,6 +68,73 @@ pub fn tr(en: &str, pt: &str) -> &'static str {
     }
 }
 
+/// Mensagens de validação localizadas para os campos de memória.
+pub mod validacao {
+    use super::current;
+    use crate::i18n::Language;
+
+    pub fn nome_comprimento(max: usize) -> String {
+        match current() {
+            Language::English => format!("name must be 1-{max} chars"),
+            Language::Portugues => format!("nome deve ter entre 1 e {max} caracteres"),
+        }
+    }
+
+    pub fn nome_reservado() -> String {
+        match current() {
+            Language::English => {
+                "names and namespaces starting with __ are reserved for internal use".to_string()
+            }
+            Language::Portugues => {
+                "nomes e namespaces iniciados com __ são reservados para uso interno".to_string()
+            }
+        }
+    }
+
+    pub fn nome_kebab(nome: &str) -> String {
+        match current() {
+            Language::English => format!(
+                "name must be kebab-case slug (lowercase letters, digits, hyphens): '{nome}'"
+            ),
+            Language::Portugues => {
+                format!("nome deve estar em kebab-case (minúsculas, dígitos, hífens): '{nome}'")
+            }
+        }
+    }
+
+    pub fn descricao_excede(max: usize) -> String {
+        match current() {
+            Language::English => format!("description must be <= {max} chars"),
+            Language::Portugues => format!("descrição deve ter no máximo {max} caracteres"),
+        }
+    }
+
+    pub fn body_excede(max: usize) -> String {
+        match current() {
+            Language::English => format!("body exceeds {max} chars"),
+            Language::Portugues => format!("corpo excede {max} caracteres"),
+        }
+    }
+
+    pub fn novo_nome_comprimento(max: usize) -> String {
+        match current() {
+            Language::English => format!("new-name must be 1-{max} chars"),
+            Language::Portugues => format!("novo nome deve ter entre 1 e {max} caracteres"),
+        }
+    }
+
+    pub fn novo_nome_kebab(nome: &str) -> String {
+        match current() {
+            Language::English => format!(
+                "new-name must be kebab-case slug (lowercase letters, digits, hyphens): '{nome}'"
+            ),
+            Language::Portugues => format!(
+                "novo nome deve estar em kebab-case (minúsculas, dígitos, hífens): '{nome}'"
+            ),
+        }
+    }
+}
+
 #[cfg(test)]
 mod testes {
     use super::*;
@@ -100,5 +167,182 @@ mod testes {
         std::env::set_var("LC_ALL", "pt_BR.UTF-8");
         assert_eq!(Language::from_env_or_locale(), Language::Portugues);
         std::env::remove_var("LC_ALL");
+    }
+
+    mod testes_validacao {
+        use super::*;
+
+        #[test]
+        fn nome_comprimento_en() {
+            let msg = match Language::English {
+                Language::English => format!("name must be 1-{} chars", 80),
+                Language::Portugues => format!("nome deve ter entre 1 e {} caracteres", 80),
+            };
+            assert!(msg.contains("name must be 1-80 chars"), "obtido: {msg}");
+        }
+
+        #[test]
+        fn nome_comprimento_pt() {
+            let msg = match Language::Portugues {
+                Language::English => format!("name must be 1-{} chars", 80),
+                Language::Portugues => format!("nome deve ter entre 1 e {} caracteres", 80),
+            };
+            assert!(
+                msg.contains("nome deve ter entre 1 e 80 caracteres"),
+                "obtido: {msg}"
+            );
+        }
+
+        #[test]
+        fn nome_kebab_en() {
+            let nome = "Invalid_Name";
+            let msg = match Language::English {
+                Language::English => format!(
+                    "name must be kebab-case slug (lowercase letters, digits, hyphens): '{nome}'"
+                ),
+                Language::Portugues => {
+                    format!("nome deve estar em kebab-case (minúsculas, dígitos, hífens): '{nome}'")
+                }
+            };
+            assert!(msg.contains("kebab-case slug"), "obtido: {msg}");
+            assert!(msg.contains("Invalid_Name"), "obtido: {msg}");
+        }
+
+        #[test]
+        fn nome_kebab_pt() {
+            let nome = "Invalid_Name";
+            let msg = match Language::Portugues {
+                Language::English => format!(
+                    "name must be kebab-case slug (lowercase letters, digits, hyphens): '{nome}'"
+                ),
+                Language::Portugues => {
+                    format!("nome deve estar em kebab-case (minúsculas, dígitos, hífens): '{nome}'")
+                }
+            };
+            assert!(msg.contains("kebab-case"), "obtido: {msg}");
+            assert!(msg.contains("minúsculas"), "obtido: {msg}");
+            assert!(msg.contains("Invalid_Name"), "obtido: {msg}");
+        }
+
+        #[test]
+        fn descricao_excede_en() {
+            let msg = match Language::English {
+                Language::English => format!("description must be <= {} chars", 500),
+                Language::Portugues => format!("descrição deve ter no máximo {} caracteres", 500),
+            };
+            assert!(msg.contains("description must be <= 500"), "obtido: {msg}");
+        }
+
+        #[test]
+        fn descricao_excede_pt() {
+            let msg = match Language::Portugues {
+                Language::English => format!("description must be <= {} chars", 500),
+                Language::Portugues => format!("descrição deve ter no máximo {} caracteres", 500),
+            };
+            assert!(
+                msg.contains("descrição deve ter no máximo 500"),
+                "obtido: {msg}"
+            );
+        }
+
+        #[test]
+        fn body_excede_en() {
+            let msg = match Language::English {
+                Language::English => format!("body exceeds {} chars", 20_000),
+                Language::Portugues => format!("corpo excede {} caracteres", 20_000),
+            };
+            assert!(msg.contains("body exceeds 20000"), "obtido: {msg}");
+        }
+
+        #[test]
+        fn body_excede_pt() {
+            let msg = match Language::Portugues {
+                Language::English => format!("body exceeds {} chars", 20_000),
+                Language::Portugues => format!("corpo excede {} caracteres", 20_000),
+            };
+            assert!(msg.contains("corpo excede 20000"), "obtido: {msg}");
+        }
+
+        #[test]
+        fn novo_nome_comprimento_en() {
+            let msg = match Language::English {
+                Language::English => format!("new-name must be 1-{} chars", 80),
+                Language::Portugues => format!("novo nome deve ter entre 1 e {} caracteres", 80),
+            };
+            assert!(msg.contains("new-name must be 1-80"), "obtido: {msg}");
+        }
+
+        #[test]
+        fn novo_nome_comprimento_pt() {
+            let msg = match Language::Portugues {
+                Language::English => format!("new-name must be 1-{} chars", 80),
+                Language::Portugues => format!("novo nome deve ter entre 1 e {} caracteres", 80),
+            };
+            assert!(
+                msg.contains("novo nome deve ter entre 1 e 80"),
+                "obtido: {msg}"
+            );
+        }
+
+        #[test]
+        fn novo_nome_kebab_en() {
+            let nome = "Bad Name";
+            let msg = match Language::English {
+                Language::English => format!(
+                    "new-name must be kebab-case slug (lowercase letters, digits, hyphens): '{nome}'"
+                ),
+                Language::Portugues => format!(
+                    "novo nome deve estar em kebab-case (minúsculas, dígitos, hífens): '{nome}'"
+                ),
+            };
+            assert!(msg.contains("new-name must be kebab-case"), "obtido: {msg}");
+        }
+
+        #[test]
+        fn novo_nome_kebab_pt() {
+            let nome = "Bad Name";
+            let msg = match Language::Portugues {
+                Language::English => format!(
+                    "new-name must be kebab-case slug (lowercase letters, digits, hyphens): '{nome}'"
+                ),
+                Language::Portugues => format!(
+                    "novo nome deve estar em kebab-case (minúsculas, dígitos, hífens): '{nome}'"
+                ),
+            };
+            assert!(
+                msg.contains("novo nome deve estar em kebab-case"),
+                "obtido: {msg}"
+            );
+        }
+
+        #[test]
+        fn nome_reservado_en() {
+            let msg = match Language::English {
+                Language::English => {
+                    "names and namespaces starting with __ are reserved for internal use"
+                        .to_string()
+                }
+                Language::Portugues => {
+                    "nomes e namespaces iniciados com __ são reservados para uso interno"
+                        .to_string()
+                }
+            };
+            assert!(msg.contains("reserved for internal use"), "obtido: {msg}");
+        }
+
+        #[test]
+        fn nome_reservado_pt() {
+            let msg = match Language::Portugues {
+                Language::English => {
+                    "names and namespaces starting with __ are reserved for internal use"
+                        .to_string()
+                }
+                Language::Portugues => {
+                    "nomes e namespaces iniciados com __ são reservados para uso interno"
+                        .to_string()
+                }
+            };
+            assert!(msg.contains("reservados para uso interno"), "obtido: {msg}");
+        }
     }
 }

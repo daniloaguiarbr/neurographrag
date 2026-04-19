@@ -23,11 +23,27 @@ struct HealthCounts {
 }
 
 #[derive(Serialize)]
+struct HealthCheck {
+    name: String,
+    ok: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    detail: Option<String>,
+}
+
+#[derive(Serialize)]
 struct HealthResponse {
     status: String,
     integrity: String,
+    integrity_ok: bool,
+    schema_ok: bool,
+    vec_memories_ok: bool,
+    vec_entities_ok: bool,
+    vec_chunks_ok: bool,
+    fts_ok: bool,
+    model_ok: bool,
     counts: HealthCounts,
     db_path: String,
+    db_size_bytes: u64,
     /// Versão do schema aplicado (top-level para contrato documentado em AGENT_PROTOCOL.md).
     schema_version: String,
     /// Lista de entidades referenciadas por memórias mas ausentes na tabela de entidades.
@@ -37,6 +53,18 @@ struct HealthResponse {
     wal_size_mb: f64,
     /// Modo de journaling do SQLite (wal, delete, truncate, persist, memory, off).
     journal_mode: String,
+    checks: Vec<HealthCheck>,
+}
+
+/// Verifica se uma tabela (incluindo virtuais) existe em sqlite_master.
+fn table_exists(conn: &rusqlite::Connection, table_name: &str) -> bool {
+    conn.query_row(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type IN ('table', 'shadow') AND name = ?1",
+        rusqlite::params![table_name],
+        |r| r.get::<_, i64>(0),
+    )
+    .unwrap_or(0)
+        > 0
 }
 
 pub fn run(args: HealthArgs) -> Result<(), AppError> {
@@ -65,7 +93,8 @@ pub fn run(args: HealthArgs) -> Result<(), AppError> {
     let vec_memories_count: i64 =
         conn.query_row("SELECT COUNT(*) FROM vec_memories", [], |r| r.get(0))?;
 
-    let status = if integrity == "ok" { "ok" } else { "degraded" };
+    let integrity_ok = integrity == "ok";
+    let status = if integrity_ok { "ok" } else { "degraded" };
 
     let schema_version: String = conn
         .query_row(
@@ -74,6 +103,14 @@ pub fn run(args: HealthArgs) -> Result<(), AppError> {
             |r| r.get(0),
         )
         .unwrap_or_else(|_| "unknown".to_string());
+
+    let schema_ok = !schema_version.is_empty() && schema_version != "unknown";
+
+    // Verifica tabelas vetoriais via sqlite_master
+    let vec_memories_ok = table_exists(&conn, "vec_memories");
+    let vec_entities_ok = table_exists(&conn, "vec_entities");
+    let vec_chunks_ok = table_exists(&conn, "vec_chunks");
+    let fts_ok = table_exists(&conn, "fts_memories");
 
     // Detecta entidades órfãs referenciadas por memórias mas ausentes na tabela entities.
     let mut missing_entities: Vec<String> = Vec::new();
@@ -98,9 +135,99 @@ pub fn run(args: HealthArgs) -> Result<(), AppError> {
         .map(|m| m.len() as f64 / 1024.0 / 1024.0)
         .unwrap_or(0.0);
 
+    // Tamanho do arquivo de banco em bytes
+    let db_size_bytes = fs::metadata(&paths.db).map(|m| m.len()).unwrap_or(0);
+
+    // Verifica se o modelo ONNX está presente no cache
+    let model_dir = paths.models.join("models--intfloat--multilingual-e5-small");
+    let model_ok = model_dir.exists();
+
+    // Monta array de checks para diagnóstico detalhado
+    let mut checks: Vec<HealthCheck> = Vec::new();
+
+    checks.push(HealthCheck {
+        name: "integrity".to_string(),
+        ok: integrity_ok,
+        detail: if integrity_ok {
+            None
+        } else {
+            Some(integrity.clone())
+        },
+    });
+
+    checks.push(HealthCheck {
+        name: "schema_version".to_string(),
+        ok: schema_ok,
+        detail: if schema_ok {
+            None
+        } else {
+            Some(format!("schema_version={schema_version:?}"))
+        },
+    });
+
+    checks.push(HealthCheck {
+        name: "vec_memories".to_string(),
+        ok: vec_memories_ok,
+        detail: if vec_memories_ok {
+            None
+        } else {
+            Some("tabela vec_memories ausente em sqlite_master".to_string())
+        },
+    });
+
+    checks.push(HealthCheck {
+        name: "vec_entities".to_string(),
+        ok: vec_entities_ok,
+        detail: if vec_entities_ok {
+            None
+        } else {
+            Some("tabela vec_entities ausente em sqlite_master".to_string())
+        },
+    });
+
+    checks.push(HealthCheck {
+        name: "vec_chunks".to_string(),
+        ok: vec_chunks_ok,
+        detail: if vec_chunks_ok {
+            None
+        } else {
+            Some("tabela vec_chunks ausente em sqlite_master".to_string())
+        },
+    });
+
+    checks.push(HealthCheck {
+        name: "fts_memories".to_string(),
+        ok: fts_ok,
+        detail: if fts_ok {
+            None
+        } else {
+            Some("tabela fts_memories ausente em sqlite_master".to_string())
+        },
+    });
+
+    checks.push(HealthCheck {
+        name: "model_onnx".to_string(),
+        ok: model_ok,
+        detail: if model_ok {
+            None
+        } else {
+            Some(format!(
+                "modelo ausente em {}; execute 'neurographrag models download'",
+                model_dir.display()
+            ))
+        },
+    });
+
     output::emit_json(&HealthResponse {
         status: status.to_string(),
         integrity,
+        integrity_ok,
+        schema_ok,
+        vec_memories_ok,
+        vec_entities_ok,
+        vec_chunks_ok,
+        fts_ok,
+        model_ok,
         counts: HealthCounts {
             memories: memories_count,
             entities: entities_count,
@@ -108,11 +235,107 @@ pub fn run(args: HealthArgs) -> Result<(), AppError> {
             vec_memories: vec_memories_count,
         },
         db_path: paths.db.display().to_string(),
+        db_size_bytes,
         schema_version,
         missing_entities,
         wal_size_mb,
         journal_mode,
+        checks,
     })?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod testes {
+    use super::*;
+
+    #[test]
+    fn health_check_serializa_todos_os_campos_novos() {
+        let resposta = HealthResponse {
+            status: "ok".to_string(),
+            integrity: "ok".to_string(),
+            integrity_ok: true,
+            schema_ok: true,
+            vec_memories_ok: true,
+            vec_entities_ok: true,
+            vec_chunks_ok: true,
+            fts_ok: true,
+            model_ok: false,
+            counts: HealthCounts {
+                memories: 5,
+                entities: 3,
+                relationships: 2,
+                vec_memories: 5,
+            },
+            db_path: "/tmp/test.sqlite".to_string(),
+            db_size_bytes: 4096,
+            schema_version: "1".to_string(),
+            missing_entities: vec![],
+            wal_size_mb: 0.0,
+            journal_mode: "wal".to_string(),
+            checks: vec![
+                HealthCheck {
+                    name: "integrity".to_string(),
+                    ok: true,
+                    detail: None,
+                },
+                HealthCheck {
+                    name: "model_onnx".to_string(),
+                    ok: false,
+                    detail: Some("modelo ausente".to_string()),
+                },
+            ],
+        };
+
+        let json = serde_json::to_value(&resposta).unwrap();
+        assert_eq!(json["status"], "ok");
+        assert_eq!(json["integrity_ok"], true);
+        assert_eq!(json["schema_ok"], true);
+        assert_eq!(json["vec_memories_ok"], true);
+        assert_eq!(json["vec_entities_ok"], true);
+        assert_eq!(json["vec_chunks_ok"], true);
+        assert_eq!(json["fts_ok"], true);
+        assert_eq!(json["model_ok"], false);
+        assert_eq!(json["db_size_bytes"], 4096u64);
+        assert!(json["checks"].is_array());
+        assert_eq!(json["checks"].as_array().unwrap().len(), 2);
+
+        // Verifica que detail está ausente quando ok=true (skip_serializing_if)
+        let integrity_check = &json["checks"][0];
+        assert_eq!(integrity_check["name"], "integrity");
+        assert_eq!(integrity_check["ok"], true);
+        assert!(integrity_check.get("detail").is_none());
+
+        // Verifica que detail está presente quando ok=false
+        let model_check = &json["checks"][1];
+        assert_eq!(model_check["name"], "model_onnx");
+        assert_eq!(model_check["ok"], false);
+        assert_eq!(model_check["detail"], "modelo ausente");
+    }
+
+    #[test]
+    fn health_check_sem_detail_omite_campo() {
+        let check = HealthCheck {
+            name: "vec_memories".to_string(),
+            ok: true,
+            detail: None,
+        };
+        let json = serde_json::to_value(&check).unwrap();
+        assert!(
+            json.get("detail").is_none(),
+            "campo detail deve ser omitido quando None"
+        );
+    }
+
+    #[test]
+    fn health_check_com_detail_serializa_campo() {
+        let check = HealthCheck {
+            name: "fts_memories".to_string(),
+            ok: false,
+            detail: Some("tabela fts_memories ausente".to_string()),
+        };
+        let json = serde_json::to_value(&check).unwrap();
+        assert_eq!(json["detail"], "tabela fts_memories ausente");
+    }
 }

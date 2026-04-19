@@ -36,7 +36,7 @@ neurographrag health --json
 
 ### Explanation
 - Command `init` creates the SQLite file and downloads `multilingual-e5-small` locally
-- Flag `--namespace default` fixes the initial scope so your agents agree on targets
+- Flag `--namespace default` is a user-chosen name; the built-in fallback namespace is `global`
 - Command `health` validates integrity with `PRAGMA integrity_check` and returns JSON
 - Exit code `0` signals the database is ready for writes and reads from any agent
 - Saves 30 minutes per laptop versus a Pinecone plus Docker plus Python bootstrap
@@ -97,20 +97,20 @@ fd -e md docs/ -0 | xargs -0 -n 1 -I{} sh -c '
 ### Solution
 ```bash
 neurographrag hybrid-search "postgres migration deadlock" \
-  --k 10 --rrf-k 60 --weight-vec 0.6 --weight-fts 0.4 --json
+  --k 10 --rrf-k 60 --json
 ```
 
 
 ### Explanation
 - `--rrf-k 60` is the Reciprocal Rank Fusion smoothing constant recommended by RRF literature
-- `--weight-vec 0.6` biases recall toward semantic similarity with higher fidelity
-- `--weight-fts 0.4` keeps exact keyword hits visible inside the top fused ranks
+- Default `--weight-vec 1.0` and `--weight-fts 1.0` treat both signals as equally important
+- Override for advanced tuning: `--weight-vec 0.7 --weight-fts 0.3` biases toward semantics
 - JSON emits `vec_rank` and `fts_rank` per result so downstream agents can audit fusion
 - Saves 50 percent tokens versus asking an LLM to re-rank after pure vector recall
 
 
 ### Variants
-- Set `--weight-vec 1.0 --weight-fts 0.0` to reproduce a pure `recall` baseline for A/B tests
+- Pass `--weight-vec 1.0 --weight-fts 0.0` to reproduce a pure `recall` baseline for A/B tests
 - Raise `--k` to 50 before a re-ranker agent prunes down to the final 5 hits
 
 
@@ -132,6 +132,8 @@ neurographrag related authentication-flow --hops 2 --json
 
 
 ### Explanation
+- `related` takes a MEMORY name (kebab-case slug), not an entity name
+- The positional argument must match a name stored via `remember` in the same namespace
 - `related` walks typed edges stored in `entity_edges` with user-controlled hop count
 - `--hops 2` includes friends-of-friends memories linked through shared entities
 - JSON output reports the traversal path so the LLM can reason about relation chains
@@ -369,13 +371,13 @@ jobs:
 ### Solution
 ```bash
 neurographrag list --limit 10000 --json \
-  | jaq -c '.memories[]' > memories-$(date +%Y%m%d).ndjson
+  | jaq -c '.[]' > memories-$(date +%Y%m%d).ndjson
 ```
 
 
 ### Explanation
 - `list --limit 10000` enumerates memories up to the ceiling with deterministic ordering
-- `jaq -c '.memories[]'` flattens the array into NDJSON readable by any tool instantly
+- `jaq -c '.[]'` iterates the root array into NDJSON readable by any tool instantly
 - Result file opens in `rg` `bat` or spreadsheet apps without SQLite knowledge at all
 - Diff two snapshots with `difft` to audit what changed between monthly backups cleanly
 - Saves auditor review time since NDJSON is human-readable versus opaque binary files
@@ -465,7 +467,7 @@ parallel -j 4 'NEUROGRAPHRAG_NAMESPACE={} neurographrag recall "error rate" --k 
 ### Solution
 ```bash
 neurographrag health --json | jaq '{integrity, wal_size_mb, journal_mode}'
-neurographrag stats --json | jaq '{memories, entities, edges, avg_body_len}'
+neurographrag stats --json | jaq '{memories, memories_total, entities, entities_total, relationships, relationships_total, edges, chunks_total, avg_body_len, db_size_bytes, db_bytes}'
 NEUROGRAPHRAG_LOG_LEVEL=debug neurographrag recall "slow query" --k 5 --json
 ```
 
@@ -544,7 +546,7 @@ fn recall_agent_context(namespace: &str, query: &str, k: u8) -> anyhow::Result<V
         .output()?;
     anyhow::ensure!(output.status.success(), "neurographrag recall failed");
     let parsed: Value = serde_json::from_slice(&output.stdout)?;
-    let items = parsed["items"]
+    let items = parsed["results"]
         .as_array()
         .unwrap_or(&vec![])
         .iter()
@@ -597,7 +599,7 @@ fn swarm_recall_all(agent_ids: &[&str], query: &str) -> anyhow::Result<Vec<(Stri
             .output()?;
         if output.status.success() {
             let parsed: serde_json::Value = serde_json::from_slice(&output.stdout)?;
-            if let Some(items) = parsed["items"].as_array() {
+            if let Some(items) = parsed["results"].as_array() {
                 for item in items {
                     if let Some(body) = item["body"].as_str() {
                         results.push((agent_id.to_string(), body.to_owned()));
@@ -664,7 +666,7 @@ async fn retrieve_relevant_context(
         .output()?;
     anyhow::ensure!(output.status.success(), "hybrid-search failed");
     let parsed: serde_json::Value = serde_json::from_slice(&output.stdout)?;
-    let context = parsed["items"]
+    let context = parsed["results"]
         .as_array()
         .unwrap_or(&vec![])
         .iter()
@@ -728,7 +730,7 @@ fn load_cascade_history(namespace: &str, prompt: &str) -> anyhow::Result<String>
         .output()?;
     anyhow::ensure!(output.status.success(), "recall failed for cascade history");
     let parsed: serde_json::Value = serde_json::from_slice(&output.stdout)?;
-    let history = parsed["items"]
+    let history = parsed["results"]
         .as_array()
         .unwrap_or(&vec![])
         .iter()
@@ -784,7 +786,7 @@ fn offline_recall(query: &str, k: u8) -> anyhow::Result<Vec<String>> {
         .output()?;
     anyhow::ensure!(output.status.success(), "offline recall failed");
     let parsed: serde_json::Value = serde_json::from_slice(&output.stdout)?;
-    let items = parsed["items"]
+    let items = parsed["results"]
         .as_array()
         .unwrap_or(&vec![])
         .iter()

@@ -127,19 +127,19 @@ neurographrag remember --name "memória-acentuada" --body "caracteres unicode fu
 ### Bash Zsh Fish PowerShell Nushell — Todos Primeira Classe
 ```bash
 # Bash e Zsh compartilham sintaxe idêntica para cada pipeline desta documentação
-neurographrag recall "query" --json | jaq '.hits[].name'
+neurographrag recall "query" --json | jaq '.results[].name'
 ```
 ```fish
 # Fish usa a mesma invocação do binário com sintaxe ligeiramente diferente para variáveis
-neurographrag recall "query" --json | jaq '.hits[].name'
+neurographrag recall "query" --json | jaq '.results[].name'
 ```
 ```powershell
 # PowerShell canaliza objetos nativamente mas jaq ainda aceita JSON puro em stdin
-neurographrag recall "query" --json | jaq '.hits[].name'
+neurographrag recall "query" --json | jaq '.results[].name'
 ```
 ```nu
 # Nushell consome JSON diretamente em tabelas estruturadas sem ferramentas externas
-neurographrag recall "query" --json | from json | get hits | select name
+neurographrag recall "query" --json | from json | get results | select name
 ```
 - Cada shell acima lê os mesmos códigos de saída garantindo semântica de orquestração idêntica
 - Formato JSON de saída fica byte idêntico nos cinco shells simplificando pipelines automatizados

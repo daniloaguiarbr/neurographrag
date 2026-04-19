@@ -1,6 +1,6 @@
 # neurographrag
 
-27 AI agents. One 25 MB binary. Zero cloud calls.
+Your AI agents forget everything. Give any LLM agent a memory that survives restarts, cloud outages, and API bills. No cloud. No Python. No embeddings API. Still GraphRAG. This 25 MB binary gives them a brain.
 
 [![Crates.io](https://img.shields.io/crates/v/neurographrag.svg)](https://crates.io/crates/neurographrag)
 [![docs.rs](https://img.shields.io/docsrs/neurographrag)](https://docs.rs/neurographrag)
@@ -10,7 +10,7 @@
 [![MSRV](https://img.shields.io/crates/msrv/neurographrag)](https://crates.io/crates/neurographrag)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
-> Persistent memory for 27 AI agents in a single 25 MB Rust binary
+> Your AI agents forget everything. Give any LLM agent a memory that survives restarts, cloud outages, and API bills. No cloud. No Python. No embeddings API. Still GraphRAG. This 25 MB binary gives them a brain.
 
 - Portuguese version available at [README.pt-BR.md](README.pt-BR.md)
 

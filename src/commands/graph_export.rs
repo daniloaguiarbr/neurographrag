@@ -27,6 +27,9 @@ struct NodeOut {
     name: String,
     namespace: String,
     kind: String,
+    /// Duplicata de `kind` para compatibilidade com docs que usam `type`.
+    #[serde(rename = "type")]
+    r#type: String,
 }
 
 #[derive(Serialize)]
@@ -67,6 +70,7 @@ pub fn run(args: GraphArgs) -> Result<(), AppError> {
             id: n.id,
             name: n.name,
             namespace: n.namespace,
+            r#type: n.kind.clone(),
             kind: n.kind,
         })
         .collect();
@@ -168,4 +172,53 @@ fn render_mermaid(nodes: &[NodeOut], edges: &[EdgeOut]) -> String {
         out.push_str(&format!("  {from} -->|{label}| {to}\n"));
     }
     out
+}
+
+#[cfg(test)]
+mod testes {
+    use super::*;
+
+    fn cria_node(kind: &str) -> NodeOut {
+        NodeOut {
+            id: 1,
+            name: "entidade-teste".to_string(),
+            namespace: "default".to_string(),
+            kind: kind.to_string(),
+            r#type: kind.to_string(),
+        }
+    }
+
+    #[test]
+    fn node_out_type_duplica_kind() {
+        let node = cria_node("agent");
+        let json = serde_json::to_value(&node).expect("serialização deve funcionar");
+        assert_eq!(json["kind"], json["type"]);
+        assert_eq!(json["kind"], "agent");
+        assert_eq!(json["type"], "agent");
+    }
+
+    #[test]
+    fn node_out_serializa_todos_campos() {
+        let node = cria_node("document");
+        let json = serde_json::to_value(&node).expect("serialização deve funcionar");
+        assert!(json.get("id").is_some());
+        assert!(json.get("name").is_some());
+        assert!(json.get("namespace").is_some());
+        assert!(json.get("kind").is_some());
+        assert!(json.get("type").is_some());
+    }
+
+    #[test]
+    fn graph_snapshot_serializa_nodes_com_type() {
+        let node = cria_node("concept");
+        let snapshot = GraphSnapshot {
+            nodes: vec![node],
+            edges: vec![],
+        };
+        let json_str = render_json(&snapshot).expect("renderização deve funcionar");
+        let json: serde_json::Value = serde_json::from_str(&json_str).expect("json válido");
+        let primeiro_node = &json["nodes"][0];
+        assert_eq!(primeiro_node["kind"], primeiro_node["type"]);
+        assert_eq!(primeiro_node["type"], "concept");
+    }
 }
