@@ -33,11 +33,13 @@
 ## Quick Start
 ### Install — Three Commands
 ```bash
-cargo install neurographrag
+cargo install --locked neurographrag
 neurographrag init
 neurographrag remember --name onboarding-note --type user --description "first memory" --body "hello graphrag"
 neurographrag recall "graphrag" --k 5
 ```
+- `--locked` reuses the exact `Cargo.lock` shipped with the crate, preventing MSRV breakage when a transitive dependency publishes a patch that bumps its own MSRV
+- Without `--locked`, Cargo resolves every dependency freshly and may pick a patch release that requires a newer `rustc` than the one declared in `rust-version`
 
 
 ## Superpowers for AI Agents
@@ -242,11 +244,13 @@ parallel -j 4 neurographrag remember --name {1} --body {2} ::: names.txt ::: bod
 ## Início Rápido
 ### Instalação — Três Comandos
 ```bash
-cargo install neurographrag
+cargo install --locked neurographrag
 neurographrag init
 neurographrag remember --name primeira-memoria --type user --description "primeira memória" --body "olá graphrag"
 neurographrag recall "graphrag" --k 5
 ```
+- `--locked` reaproveita o `Cargo.lock` exato publicado com o crate, evitando quebras de MSRV quando uma dependência transitiva publica um patch que avança o próprio MSRV
+- Sem `--locked`, o Cargo resolve todas as dependências do zero e pode escolher um patch que exija um `rustc` mais novo do que o declarado em `rust-version`
 
 
 ## Superpoderes para Agentes de IA

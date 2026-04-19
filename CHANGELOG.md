@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-04-18
+
+### Fixed
+
+- Installation failure on `rustc` versions in the range `1.88..1.95` caused by transitive dependency `constant_time_eq 0.4.3` (pulled via `blake3`) bumping its MSRV to 1.95.0 in a patch release
+- `cargo install neurographrag` without `--locked` now succeeds because the direct pin `constant_time_eq = "=0.4.2"` forces a resolved version compatible with our declared `rust-version = "1.88"`
+
+### Changed
+
+- `Cargo.toml` now declares an explicit preventive pin `constant_time_eq = "=0.4.2"` with an inline comment documenting the MSRV drift reason; the pin will be revisited when we raise `rust-version` to 1.95
+- `README.md` (EN and PT) install instructions updated from `cargo install neurographrag` to `cargo install --locked neurographrag`, including a bullet explaining the rationale
+
+### Added
+
+- `docs_rules/prd.md` section "Dependency MSRV Drift Protection" documenting the canonical mitigation pattern — direct pinning of problematic transitive dependencies in the top-level `Cargo.toml`
+
+
 ## [1.2.0] - 2026-04-18
 
 ### Added
